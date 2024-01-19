@@ -6,6 +6,8 @@ var logger = require("morgan");
 
 var indexRouter = require("./routes/index");
 var fileRouter = require("./routes/fileSystem");
+var CBTIS = require("./routes/CBTIS");
+var directory = require("./routes/directory");
 var user = require("./routes/users");
 const cors = require("cors");
 
@@ -30,6 +32,8 @@ app.use(
 
 app.use("/", indexRouter);
 app.use("/file", fileRouter);
+app.use("/CBTIS", CBTIS);
+app.use("/directory", directory);
 app.use("/user", user);
 
 // catch 404 and forward to error handler

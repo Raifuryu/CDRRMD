@@ -1,14 +1,7 @@
 var express = require("express");
 var router = express.Router();
 const cors = require("cors");
-
-const mysql = require("mysql2");
-const connection = mysql.createConnection({
-  host: "localhost",
-  user: "Research&Planning",
-  password: "Planning_Forever_2022",
-  database: "data_bank",
-});
+var connection = require("./connection.js");
 
 router.use(cors({ origin: true, credentials: true }));
 

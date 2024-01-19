@@ -43,13 +43,20 @@ function Navbar() {
                 <a>Systems</a>
                 <ul className="p-2">
                   <li>
-                    <a href="192.168.1.69:913">HRIS</a>
+                    <Link to="/file-system-dashboard">
+                      Policies File System
+                    </Link>
                   </li>
                   <li>
-                    <a>CBTIS</a>
+                    <a href="http://192.168.1.69:913/login.php" target="_blank">
+                      HRIS
+                    </a>
                   </li>
                   <li>
-                    <Link to="/">Welcome</Link>
+                    <Link to="/training">CBTIS</Link>
+                  </li>
+                  <li>
+                    <Link to="/directory">Directory</Link>
                   </li>
                 </ul>
               </li>
@@ -72,15 +79,15 @@ function Navbar() {
               <Link to="/file-system-dashboard">Policies File System</Link>
             </li>
             <li>
-              <a
-                href="http://192.168.1.69:913/login.php"
-                target="_blank"
-              >
+              <a href="http://192.168.1.69:913/login.php" target="_blank">
                 HRIS
               </a>
             </li>
-            <li className="disabled">
-              <a>TIS</a>
+            <li>
+              <Link to="/training">CBTIS</Link>
+            </li>
+            <li>
+              <Link to="/directory">Directory</Link>
             </li>
           </ul>
         </div>
@@ -90,7 +97,7 @@ function Navbar() {
             <input
               type="checkbox"
               className="theme-controller"
-              value="light"
+              value="dark"
               checked={isdark}
               onChange={() => setIsdark(!isdark)}
             />
