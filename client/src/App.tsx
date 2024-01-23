@@ -1,9 +1,10 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Layout from "./Layout";
+import Layout from "./Layouts/Layout";
 import Welcome from "./Welcome";
-import FileSystemDashboard from "./components/File System/Dashboard";
-import CBTISLayout from "./components/CBTISLayout";
-import DirectoryLayout from "./components/DirectoryLayout";
+import FileSystemDashboard from "./pages/Data Bank";
+import CBTISLayout from "./pages/Capacity Building and Trainings Information System";
+import Training from "./pages/Capacity Building and Trainings Information System/DetailedPage";
+import DirectoryLayout from "./pages/Directory";
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
             element={<FileSystemDashboard />}
           />
           <Route path="training" element={<CBTISLayout />} />
+          <Route path="training/:trainingId" element={<Training />} />
           <Route path="directory" element={<DirectoryLayout />} />
         </Route>
       </Routes>
