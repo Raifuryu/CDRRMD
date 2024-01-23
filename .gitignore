@@ -23,4 +23,4 @@ dist-ssr
 *.sln
 *.sw?
 
-connection.js
+./server/coutes/connection.js
