@@ -9,6 +9,7 @@ var fileRouter = require("./routes/fileSystem");
 var CBTIS = require("./routes/CBTIS");
 var training = require("./routes/training");
 var directory = require("./routes/directory");
+var barangay = require("./routes/barangay");
 var user = require("./routes/users");
 const cors = require("cors");
 
@@ -36,6 +37,7 @@ app.use("/file", fileRouter);
 app.use("/CBTIS", CBTIS);
 app.use("/training", training);
 app.use("/directory", directory);
+app.use("/barangay", barangay);
 app.use("/user", user);
 
 // catch 404 and forward to error handler

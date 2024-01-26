@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 const CBTISLayout = () => {
   const columns = [
     { header: "ID", accessorKey: "id" },
-    { header: "Name", accessorKey: "name" },
+    { header: "Name", accessorKey: "title" },
     { header: "Venue", accessorKey: "venue" },
     { header: "Trainer", accessorKey: "trainer" },
     { header: "Start Date", accessorKey: "start_date" },
