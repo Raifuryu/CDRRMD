@@ -96,7 +96,7 @@ export default function Dashboard() {
               initialState={{
                 pagination: {
                   paginationModel: {
-                    pageSize: 10,
+                    pageSize: 100,
                   },
                 },
                 filter: {
@@ -142,6 +142,7 @@ export default function Dashboard() {
                 </div>
                 <input
                   type="text"
+                  value={number}
                   placeholder="Number"
                   className="input input-bordered w-full max-w-xs"
                   onChange={(e) => setNumber(e.target.value)}
@@ -153,6 +154,7 @@ export default function Dashboard() {
                 </div>
                 <input
                   type="text"
+                  value={name}
                   placeholder="Title"
                   className="input input-bordered w-full max-w-xs"
                   onChange={(e) => setName(e.target.value)}
@@ -164,6 +166,7 @@ export default function Dashboard() {
                 </div>
                 <input
                   type="text"
+                  value={dateApproved}
                   placeholder="Date Approved"
                   className="input input-bordered w-full max-w-xs"
                   onChange={(e) => setDateApproved(e.target.value)}
@@ -197,9 +200,9 @@ export default function Dashboard() {
                   <option>Resolution</option>
                   <option>Ordinance</option>
                   <option>Executive Order</option>
+                  <option>MOA/MOU</option>
                 </select>
               </label>
-
               <button
                 className="btn btn-outline btn-success mt-3 btn-xs sm:btn-sm md:btn-md lg:btn-lg"
                 onClick={(e) => {

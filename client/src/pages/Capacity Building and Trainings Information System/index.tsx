@@ -26,6 +26,34 @@ const CBTISLayout = () => {
     },
   ];
 
+  // const trainingColumn = [
+  //   {
+  //     title: "Title",
+  //     dataIndex: "title",
+  //     key: "title",
+  //   },
+  //   {
+  //     title: "Venue",
+  //     dataIndex: "venue",
+  //     key: "venue",
+  //   },
+  //   {
+  //     title: "Trainer",
+  //     dataIndex: "trainer",
+  //     key: "trainer",
+  //   },
+  //   {
+  //     title: "Start Date",
+  //     dataIndex: "start_date",
+  //     key: "start_date",
+  //   },
+  //   {
+  //     title: "End Date",
+  //     dataIndex: "end_date",
+  //     key: "end_date",
+  //   },
+  // ];
+
   const [data, setData] = useState([]);
 
   const [trainingTitle, setTrainingTitle] = useState("");
