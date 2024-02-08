@@ -10,6 +10,7 @@ var CBTIS = require("./routes/CBTIS");
 var training = require("./routes/training");
 var directory = require("./routes/directory");
 var barangay = require("./routes/barangay");
+var organization = require("./routes/organization");
 var user = require("./routes/users");
 const cors = require("cors");
 
@@ -38,6 +39,7 @@ app.use("/CBTIS", CBTIS);
 app.use("/training", training);
 app.use("/directory", directory);
 app.use("/barangay", barangay);
+app.use("/organizations", organization);
 app.use("/user", user);
 
 // catch 404 and forward to error handler
