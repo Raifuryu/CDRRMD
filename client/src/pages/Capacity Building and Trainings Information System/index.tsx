@@ -165,16 +165,16 @@ const CBTISLayout = () => {
   const [organizationData, setOrganizationData] = useState<Organization[]>([]);
 
   useEffect(() => {
-    const trainingData = fetch("http://192.168.1.69:3000/CBTIS").then((res) =>
+    const trainingData = fetch("http://192.168.1.69:3000/api/training").then((res) =>
       res.json()
     );
 
-    const barangayData = fetch("http://192.168.1.69:3000/barangay").then(
+    const barangayData = fetch("http://192.168.1.69:3000/api/address/barangay").then(
       (res) => res.json()
     );
 
     const organizationsData = fetch(
-      "http://192.168.1.69:3000/organizations"
+      "http://192.168.1.69:3000/api/agencies"
     ).then((res) => res.json());
 
     Promise.all([trainingData, barangayData, organizationsData])

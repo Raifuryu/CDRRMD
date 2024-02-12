@@ -170,7 +170,7 @@ const DeatailedPage = () => {
     {
       title: "Barangay",
       dataIndex: "barangay",
-      key: "lgbtq",
+      key: "barangay",
     },
   ];
 
@@ -201,12 +201,12 @@ const DeatailedPage = () => {
 
   useEffect(() => {
     const trainingDetailsRequest = fetch(
-      `http://192.168.1.69:3000/training/${trainingId}`
+      `http://192.168.1.69:3000/api/training/${trainingId}`
     ).then((res) => res.json());
 
-    const barangayRequest = fetch("http://192.168.1.69:3000/barangay").then(
-      (res) => res.json()
-    );
+    const barangayRequest = fetch(
+      "http://192.168.1.69:3000/api/address/barangay"
+    ).then((res) => res.json());
 
     Promise.all([trainingDetailsRequest, barangayRequest])
       .then(([trainingData, barangayData]) => {
@@ -220,12 +220,15 @@ const DeatailedPage = () => {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      fetch(`http://192.168.1.69:3000/training/${trainingId}/participants`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      })
+      fetch(
+        `http://192.168.1.69:3000/api/training/${trainingId}/participants`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      )
         .then((response) => response.json())
         .then((data) => {
           // Check if data is available before updating the state
@@ -237,14 +240,14 @@ const DeatailedPage = () => {
           console.error("Error fetching organization data:", error);
           setLoading(false);
         });
-    }, 1000);
+    }, 100000);
     return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
     if (trainingData?.fk_office_id) {
       fetch(
-        `http://192.168.1.69:3000/organizations/${trainingData.fk_office_id}`,
+        `http://192.168.1.69:3000/api/agencies/${trainingData.fk_office_id}`,
         {
           method: "GET",
           headers: {
@@ -271,7 +274,7 @@ const DeatailedPage = () => {
   const postParticipantsData = async (participants: Participant[]) => {
     setLoading(true);
     await fetch(
-      `http://192.168.1.69:3000/training/${trainingId}/create/participants`,
+      `http://192.168.1.69:3000/api/training/${trainingId}/create/participants`,
       {
         method: "POST",
         headers: {

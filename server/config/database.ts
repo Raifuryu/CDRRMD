@@ -10,7 +10,7 @@ declare module "fastify" {
 
 async function dbConnector(fastify: FastifyInstance) {
   fastify.register(fastifyMysql, {
-    connectionString: `mysql://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}/${process.env.DB_NAME}`,
+    connectionString: `mysql://${process.env.DB_USER}:${process.env.DB_PASS}@${process.env.DB_HOST}/${process.env.DB_NAME}`,
     promise: true,
   });
 

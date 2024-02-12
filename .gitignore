@@ -24,4 +24,4 @@ dist-ssr
 *.sln
 *.sw?
 
-./server/routes/connection.js
+./server/config/database.js
