@@ -14,6 +14,7 @@ import {
   Input,
   Row,
   Select,
+  SelectProps,
   Space,
   Spin,
   Table,
@@ -37,12 +38,14 @@ const { Title } = Typography;
 
 const DeatailedPage = () => {
   interface Barangay {
+    key: React.Key;
     id: number;
     fk_city_id: number;
     barangay: string;
   }
 
   interface Participant {
+    key: React.Key;
     first_name: string;
     middle_name: string;
     last_name: string;
@@ -62,6 +65,23 @@ const DeatailedPage = () => {
     email_address: string;
   }
 
+  interface Person {
+    key: React.Key;
+    id: number;
+    first_name: string;
+    middle_name: string;
+    last_name: string;
+    extension_name: string;
+    nickname: string;
+    gender: string;
+    isLGBTQ: string;
+    civil_status: string;
+    birth_date: string;
+    birth_place: string;
+    occupation: string;
+    blood_type: string;
+  }
+
   interface Training {
     key: React.Key;
     id: number;
@@ -79,6 +99,7 @@ const DeatailedPage = () => {
   }
 
   interface Organization {
+    key: React.Key;
     id: number;
     fk_barangay_id: number;
     acronym: string;
@@ -181,22 +202,37 @@ const DeatailedPage = () => {
 
   const [barangay, setBarangay] = useState<Barangay[]>([]);
 
+  const [persons, setPersons] = useState<Person[]>([]);
+  const [trainingParticipantsList, setTrainingParticipantsList] = useState([]);
   const [trainingData, setTrainingData] = useState<Training>();
   const [organizationData, setOrganizationData] = useState<Organization>();
   const [participantsData, setParticipantsData] = useState<Participant[]>([]);
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const [totalSelectedPerson, setTotalSelectedPerson] = useState(0);
 
   const [loading, setLoading] = useState(true);
-  const [drawerState, setDrawerState] = useState(false);
+  const [addParticipantsDrawerState, setAddParticipantsDrawerState] =
+    useState(false);
+
+  const [participantsListDrawerState, setParticipantsListDrawerState] =
+    useState(false);
 
   const [isLgbtq, setIsLgbtq] = useState(false);
 
-  const showDrawer = () => {
-    setDrawerState(true);
+  const showAddParticipantsDrawer = () => {
+    setAddParticipantsDrawerState(true);
   };
 
-  const closeDrawer = () => {
-    setDrawerState(false);
+  const closeAddParticipantsDrawer = () => {
+    setAddParticipantsDrawerState(false);
+  };
+
+  const showParticipantsListDrawer = () => {
+    setParticipantsListDrawerState(true);
+  };
+
+  const closeParticipantsListDrawer = () => {
+    setParticipantsListDrawerState(false);
   };
 
   useEffect(() => {
@@ -208,10 +244,15 @@ const DeatailedPage = () => {
       "http://192.168.1.69:3000/api/address/barangay"
     ).then((res) => res.json());
 
-    Promise.all([trainingDetailsRequest, barangayRequest])
-      .then(([trainingData, barangayData]) => {
+    const personsRequest = fetch("http://192.168.1.69:3000/api/persons").then(
+      (res) => res.json()
+    );
+
+    Promise.all([trainingDetailsRequest, barangayRequest, personsRequest])
+      .then(([trainingData, barangayData, personData]) => {
         setBarangay(barangayData);
         setTrainingData(trainingData[0]);
+        setPersons(personData);
       })
       .catch((error) => {
         console.error("Error fetching data:", error);
@@ -240,7 +281,7 @@ const DeatailedPage = () => {
           console.error("Error fetching organization data:", error);
           setLoading(false);
         });
-    }, 100000);
+    }, 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -271,29 +312,55 @@ const DeatailedPage = () => {
     }
   }, [trainingData]);
 
-  const postParticipantsData = async (participants: Participant[]) => {
-    setLoading(true);
-    await fetch(
+  const postTrainingParticipants = () => {
+    fetch(
       `http://192.168.1.69:3000/api/training/${trainingId}/create/participants`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(participants),
+        body: JSON.stringify(trainingParticipantsList),
       }
     )
-      .then((response) => response.json())
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to post participants data");
+        }
+        return response.json();
+      })
       .then((data) => {
-        // Handle success, if needed
         console.log("Participants data posted successfully:", data);
+        // Optionally, you can update the component state or trigger other actions upon successful posting
       })
       .catch((error) => {
-        // Handle error
-        console.error("Error posting participants data:", error);
+        console.error("Error posting participants data:", error.message);
       });
-    setLoading(false);
   };
+
+  // const postParticipantsData = async (participants: Participant[]) => {
+  //   setLoading(true);
+  //   await fetch(
+  //     `http://192.168.1.69:3000/api/training/${trainingId}/create/participants`,
+  //     {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify(participants),
+  //     }
+  //   )
+  //     .then((response) => response.json())
+  //     .then((data) => {
+  //       // Handle success, if needed
+  //       console.log("Participants data posted successfully:", data);
+  //     })
+  //     .catch((error) => {
+  //       // Handle error
+  //       console.error("Error posting participants data:", error);
+  //     });
+  //   setLoading(false);
+  // };
 
   const handleFileUpload = (file: File) => {
     Papa.parse<Participant>(file, {
@@ -328,6 +395,23 @@ const DeatailedPage = () => {
       return isCSV;
     },
   };
+
+  const handleChange = (value: []) => {
+    setTotalSelectedPerson(value.length);
+    setTrainingParticipantsList(value);
+  };
+
+  const options: SelectProps["options"] = [];
+
+  if (persons) {
+    persons.map((value) => {
+      options.push({
+        label:
+          value.first_name + " " + value.middle_name + " " + value.last_name,
+        value: value.id,
+      });
+    });
+  }
 
   if (loading) {
     return <Spin />;
@@ -482,25 +566,24 @@ const DeatailedPage = () => {
           <FloatButton
             shape="circle"
             type="primary"
-            onClick={showDrawer}
+            onClick={showParticipantsListDrawer}
             style={{ right: 94 }}
             icon={<PlusOutlined />}
           />
         </Flex>
       </Flex>
-      {/* Drawer */}
+      {/* Select Participants List Drawer */}
       <Drawer
         title="Add Participants"
-        width={"auto"}
-        onClose={closeDrawer}
-        open={drawerState}
+        width={360}
+        onClose={closeParticipantsListDrawer}
+        open={participantsListDrawerState}
         extra={
           <Space>
-            <Button onClick={closeDrawer}>Cancel</Button>
+            <Button onClick={closeParticipantsListDrawer}>Cancel</Button>
             <Button
               onClick={() => {
-                postParticipantsData(participants);
-                setDrawerState(false);
+                postTrainingParticipants();
               }}
             >
               Submit
@@ -508,277 +591,327 @@ const DeatailedPage = () => {
           </Space>
         }
       >
-        <Form
-          layout="vertical"
-          form={participantsForm}
-          onFinish={(e) => {
-            let user = {
-              first_name: e.first_name,
-              middle_name: e.middle_name,
-              last_name: e.last_name,
-              extension_name: e.extension_name,
-              nickname: e.nickname,
-              occupation: e.occupation,
-              birth_date: e["birth_date"].format("YYYY-MM-DD"),
-              birth_place: e.birth_place,
-              blood_type: e.blood_type,
-              gender: e.gender,
-              civil_status: e.civil_status,
-              contact_number: e.contact_number,
-              email_address: e.email_address,
-              isLGBTQ: isLgbtq.toString(),
-              street: e.street,
-              sitio: e.sitio,
-              barangay: e.barangay,
-            };
-
-            setParticipants((prevData) => [...prevData, user]);
+        <Title level={5}>{totalSelectedPerson} Selected</Title>
+        <Select
+          optionFilterProp="label"
+          mode="multiple"
+          style={{ width: "100%" }}
+          placeholder="Select Participants"
+          onChange={handleChange}
+          optionLabelProp="label"
+          options={options}
+          optionRender={(option) => <Space>{option.data.label}</Space>}
+        />
+        <Button
+          className="mt-5"
+          onClick={() => {
+            showAddParticipantsDrawer();
           }}
         >
-          <Title level={3}>Add Participants</Title>
-          <Divider orientation="left">
-            <Title level={3}>Participant Details</Title>
-          </Divider>
-          <Row gutter={16}>
-            <Col span={4}>
-              <Form.Item
-                name="first_name"
-                label="First Name"
-                rules={[{ required: true, message: "Please enter First Name" }]}
-              >
-                <Input placeholder="John" />
-              </Form.Item>
-            </Col>
-            <Col span={4}>
-              <Form.Item name="middle_name" label="Middle Name">
-                <Input style={{ width: "100%" }} placeholder="The" />
-              </Form.Item>
-            </Col>
-            <Col span={4}>
-              <Form.Item
-                name="last_name"
-                label="Last Name"
-                rules={[{ required: true, message: "Please enter Last Name" }]}
-              >
-                <Input style={{ width: "100%" }} placeholder="Doe" />
-              </Form.Item>
-            </Col>
-            <Col span={4}>
-              <Form.Item name="extension_name" label="Extension Name">
-                <Input style={{ width: "100%" }} placeholder="Sr. Jr. III..." />
-              </Form.Item>
-            </Col>
-            <Col span={4}>
-              <Form.Item
-                name="nickname"
-                label="Nickname"
-                rules={[{ required: true, message: "Please enter Nickname" }]}
-              >
-                <Input style={{ width: "100%" }} placeholder="John the D" />
-              </Form.Item>
-            </Col>
-            <Col span={4}>
-              <Form.Item
-                name="occupation"
-                label="Occupation"
-                rules={[{ required: true, message: "Please enter Occupation" }]}
-              >
-                <Input />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Row gutter={16}>
-            <Col span={4}>
-              <Form.Item
-                name="birth_date"
-                label="Birth Date"
-                rules={[{ required: true, message: "Please enter Birth Date" }]}
-              >
-                <DatePicker
-                  defaultValue={dayjs("2024-01-30", "YYYY-MM-DD")}
-                  style={{ width: "100%" }}
-                />
-              </Form.Item>
-            </Col>
-            <Col span={4}>
-              <Form.Item
-                name="birth_place"
-                label="Birth Place"
-                rules={[
-                  { required: true, message: "Please enter Birth Place" },
-                ]}
-              >
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={4}>
-              <Form.Item name="street" label="Street">
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={4}>
-              <Form.Item name="sitio" label="Sitio">
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={4}>
-              <Form.Item
-                name="barangay"
-                label="Barangay"
-                rules={[
-                  { required: true, message: "Please select a Barangay" },
-                ]}
-              >
-                <Select placeholder="Please select a Barangay" showSearch>
-                  {barangay.map((item, index) => (
-                    <Option key={index} value={item.id}>
-                      {item.barangay}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={4}>
-              <Form.Item
-                name="blood_type"
-                label="Blood Type"
-                rules={[
-                  { required: true, message: "Please choose Blood Type" },
-                ]}
-              >
-                <Select placeholder="Select Blood Type" showSearch>
-                  <Option value="A+">A+</Option>
-                  <Option value="A">A</Option>
-                  <Option value="A-">A-</Option>
-                  <Option value="AB+">AB+</Option>
-                  <Option value="AB">AB</Option>
-                  <Option value="AB-">AB-</Option>
-                  <Option value="B+">B+</Option>
-                  <Option value="B">B</Option>
-                  <Option value="B-">B-</Option>
-                  <Option value="O+">O+</Option>
-                  <Option value="O">O</Option>
-                  <Option value="O-">O-</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
-          <Row gutter={16}>
-            <Col span={4}>
-              <Form.Item
-                name="contact_number"
-                label="Contact Number"
-                rules={[
-                  { required: true, message: "Please enter Contact Number" },
-                ]}
-              >
-                <Input addonBefore="+63" />
-              </Form.Item>
-            </Col>
-            <Col span={4}>
-              <Form.Item
-                name="email_address"
-                label="Email Address"
-                rules={[
-                  { required: true, message: "Please enter E-mail Address" },
-                ]}
-              >
-                <Input />
-              </Form.Item>
-            </Col>
-
-            <Col span={4}>
-              <Form.Item
-                name="civil_status"
-                label="Civil Status"
-                rules={[
-                  { required: true, message: "Please choose Civil Status" },
-                ]}
-              >
-                <Select placeholder="Select Civil Status" showSearch>
-                  <Option value="Single">Single</Option>
-                  <Option value="Married">Married</Option>
-                  <Option value="Widowed">Widowed</Option>
-                  <Option value="Annuled">Annuled</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={4}>
-              <Form.Item
-                name="gender"
-                label="Gender"
-                rules={[{ required: true, message: "Please choose a Gender" }]}
-              >
-                <Select placeholder="Select a Gender">
-                  <Option value="Male">Male</Option>
-                  <Option value="Female">Female</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={4}>
-              <Form.Item name="isLGBTQ" label="LGBTQ+" valuePropName="checked">
-                <Checkbox
-                  checked={isLgbtq}
-                  defaultChecked={false}
-                  onClick={() => {
-                    setIsLgbtq(!isLgbtq);
-                  }}
-                >
-                  Member of LGBTQ+ Community
-                </Checkbox>
-              </Form.Item>
-            </Col>
-          </Row>
-          <Row gutter={16}>
-            <Col span={"auto"}>
-              <Upload {...props} accept=".csv" maxCount={1}>
-                <Button icon={<UploadOutlined />}>
-                  Mass Upload Participants (CSV File Only)
-                </Button>
-              </Upload>
-            </Col>
-            <Col span={"auto"}>
-              <Form.Item>
-                <Button icon={<PlusOutlined />} htmlType="submit">
-                  Add Participant
-                </Button>
-              </Form.Item>
-            </Col>
-            <Col span={"Auto"}>
-              <Button
-                icon={<DeleteRowOutlined />}
-                onClick={() => {
-                  participantsForm.resetFields();
-                }}
-                danger
-              >
-                Reset Fields
-              </Button>
-            </Col>
-            <Col span={6}>
-              <Button
-                icon={<DeleteOutlined />}
-                onClick={() => {
-                  setParticipants([]);
-                  participantsForm.resetFields();
-                }}
-                danger
-              >
-                Clear Participants
-              </Button>
-            </Col>
-          </Row>
-          <Row>
+          Register a Participant
+        </Button>
+        {/* Add Participants Drawer */}
+        <Drawer
+          title="Register Participants"
+          width={"auto"}
+          onClose={closeAddParticipantsDrawer}
+          open={addParticipantsDrawerState}
+        >
+          <Form
+            layout="vertical"
+            form={participantsForm}
+            onFinish={(e) => {
+              // let user = {
+              //   first_name: e.first_name,
+              //   middle_name: e.middle_name,
+              //   last_name: e.last_name,
+              //   extension_name: e.extension_name,
+              //   nickname: e.nickname,
+              //   occupation: e.occupation,
+              //   birth_date: e["birth_date"].format("YYYY-MM-DD"),
+              //   birth_place: e.birth_place,
+              //   blood_type: e.blood_type,
+              //   gender: e.gender,
+              //   civil_status: e.civil_status,
+              //   contact_number: e.contact_number,
+              //   email_address: e.email_address,
+              //   isLGBTQ: isLgbtq.toString(),
+              //   street: e.street,
+              //   sitio: e.sitio,
+              //   barangay: e.barangay,
+              // };
+            }}
+          >
             <Divider orientation="left">
-              <Title level={3}>Participants List</Title>
+              <Title level={4}>Individual Registration</Title>
             </Divider>
-          </Row>
-          <Row>
-            <Col span={24}>
-              <Table dataSource={participants} columns={ParticipantColumn} />
-            </Col>
-          </Row>
-        </Form>
+            <Row gutter={16}>
+              <Col span={4}>
+                <Form.Item
+                  name="first_name"
+                  label="First Name"
+                  rules={[
+                    { required: true, message: "Please enter First Name" },
+                  ]}
+                >
+                  <Input placeholder="John" />
+                </Form.Item>
+              </Col>
+              <Col span={4}>
+                <Form.Item name="middle_name" label="Middle Name">
+                  <Input style={{ width: "100%" }} placeholder="The" />
+                </Form.Item>
+              </Col>
+              <Col span={4}>
+                <Form.Item
+                  name="last_name"
+                  label="Last Name"
+                  rules={[
+                    { required: true, message: "Please enter Last Name" },
+                  ]}
+                >
+                  <Input style={{ width: "100%" }} placeholder="Doe" />
+                </Form.Item>
+              </Col>
+              <Col span={4}>
+                <Form.Item name="extension_name" label="Extension Name">
+                  <Input
+                    style={{ width: "100%" }}
+                    placeholder="Sr. Jr. III..."
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={4}>
+                <Form.Item
+                  name="nickname"
+                  label="Nickname"
+                  rules={[{ required: true, message: "Please enter Nickname" }]}
+                >
+                  <Input style={{ width: "100%" }} placeholder="John the D" />
+                </Form.Item>
+              </Col>
+              <Col span={4}>
+                <Form.Item
+                  name="occupation"
+                  label="Occupation"
+                  rules={[
+                    { required: true, message: "Please enter Occupation" },
+                  ]}
+                >
+                  <Input />
+                </Form.Item>
+              </Col>
+            </Row>
+            <Row gutter={16}>
+              <Col span={4}>
+                <Form.Item
+                  name="birth_date"
+                  label="Birth Date"
+                  rules={[
+                    { required: true, message: "Please enter Birth Date" },
+                  ]}
+                >
+                  <DatePicker
+                    defaultValue={dayjs("2024-01-30", "YYYY-MM-DD")}
+                    style={{ width: "100%" }}
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={4}>
+                <Form.Item
+                  name="birth_place"
+                  label="Birth Place"
+                  rules={[
+                    { required: true, message: "Please enter Birth Place" },
+                  ]}
+                >
+                  <Input />
+                </Form.Item>
+              </Col>
+              <Col span={4}>
+                <Form.Item name="street" label="Street">
+                  <Input />
+                </Form.Item>
+              </Col>
+              <Col span={4}>
+                <Form.Item name="sitio" label="Sitio">
+                  <Input />
+                </Form.Item>
+              </Col>
+              <Col span={4}>
+                <Form.Item
+                  name="barangay"
+                  label="Barangay"
+                  rules={[
+                    { required: true, message: "Please select a Barangay" },
+                  ]}
+                >
+                  <Select
+                    optionFilterProp="label"
+                    placeholder="Please select a Barangay"
+                    showSearch
+                  >
+                    {barangay.map((item, index) => (
+                      <Option key={index} label={item.barangay} value={item.id}>
+                        {item.barangay}
+                      </Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col span={4}>
+                <Form.Item
+                  name="blood_type"
+                  label="Blood Type"
+                  rules={[
+                    { required: true, message: "Please choose Blood Type" },
+                  ]}
+                >
+                  <Select placeholder="Select Blood Type" showSearch>
+                    <Option value="A+">A+</Option>
+                    <Option value="A">A</Option>
+                    <Option value="A-">A-</Option>
+                    <Option value="AB+">AB+</Option>
+                    <Option value="AB">AB</Option>
+                    <Option value="AB-">AB-</Option>
+                    <Option value="B+">B+</Option>
+                    <Option value="B">B</Option>
+                    <Option value="B-">B-</Option>
+                    <Option value="O+">O+</Option>
+                    <Option value="O">O</Option>
+                    <Option value="O-">O-</Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
+            <Row gutter={16}>
+              <Col span={4}>
+                <Form.Item
+                  name="contact_number"
+                  label="Contact Number"
+                  rules={[
+                    { required: true, message: "Please enter Contact Number" },
+                  ]}
+                >
+                  <Input addonBefore="+63" />
+                </Form.Item>
+              </Col>
+              <Col span={4}>
+                <Form.Item
+                  name="email_address"
+                  label="Email Address"
+                  rules={[
+                    { required: true, message: "Please enter E-mail Address" },
+                  ]}
+                >
+                  <Input />
+                </Form.Item>
+              </Col>
+
+              <Col span={4}>
+                <Form.Item
+                  name="civil_status"
+                  label="Civil Status"
+                  rules={[
+                    { required: true, message: "Please choose Civil Status" },
+                  ]}
+                >
+                  <Select placeholder="Select Civil Status" showSearch>
+                    <Option value="Single">Single</Option>
+                    <Option value="Married">Married</Option>
+                    <Option value="Widowed">Widowed</Option>
+                    <Option value="Annuled">Annuled</Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col span={4}>
+                <Form.Item
+                  name="gender"
+                  label="Gender"
+                  rules={[
+                    { required: true, message: "Please choose a Gender" },
+                  ]}
+                >
+                  <Select placeholder="Select a Gender">
+                    <Option value="Male">Male</Option>
+                    <Option value="Female">Female</Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col span={4}>
+                <Form.Item
+                  name="isLGBTQ"
+                  label="LGBTQ+"
+                  valuePropName="checked"
+                >
+                  <Checkbox
+                    checked={isLgbtq}
+                    defaultChecked={false}
+                    onClick={() => {
+                      setIsLgbtq(!isLgbtq);
+                    }}
+                  >
+                    Member of LGBTQ+ Community
+                  </Checkbox>
+                </Form.Item>
+              </Col>
+            </Row>
+            <Row gutter={16}>
+              <Col span={"auto"}>
+                <Form.Item>
+                  <Button icon={<PlusOutlined />} htmlType="submit">
+                    Add Participant
+                  </Button>
+                </Form.Item>
+              </Col>
+              <Col span={"Auto"}>
+                <Button
+                  icon={<DeleteRowOutlined />}
+                  onClick={() => {
+                    participantsForm.resetFields();
+                  }}
+                  danger
+                >
+                  Reset Fields
+                </Button>
+              </Col>
+            </Row>
+            <Row>
+              <Divider orientation="left">
+                <Title level={4}>Multiple Registration(Upload CSV)</Title>
+              </Divider>
+            </Row>
+            <Row gutter={16}>
+              <Col span={"auto"}>
+                <Upload {...props} accept=".csv" maxCount={1}>
+                  <Button icon={<UploadOutlined />}>
+                    Mass Upload Participants (CSV File Only)
+                  </Button>
+                </Upload>
+              </Col>
+              <Col span={"auto"}>
+                <Button
+                  icon={<DeleteOutlined />}
+                  onClick={() => {
+                    setParticipants([]);
+                    participantsForm.resetFields();
+                  }}
+                  danger
+                >
+                  Clear Table
+                </Button>
+              </Col>
+              <Col span={"auto"}>
+                <Button icon={<PlusOutlined />}>Submit All</Button>
+              </Col>
+            </Row>
+            <Row gutter={16}>
+              <Col span={24}>
+                <Table dataSource={participants} columns={ParticipantColumn} />
+              </Col>
+            </Row>
+          </Form>
+        </Drawer>
       </Drawer>
       <Divider orientation="left">Participants</Divider>
       <Table dataSource={participantsData.flat()} columns={ParticipantColumn} />

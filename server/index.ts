@@ -4,6 +4,7 @@ import databaseConfig from "./config/database";
 import trainingRoute from "./routes/trainings";
 import addressRoute from "./routes/address";
 import agenciesRoute from "./routes/agencies";
+import personsRoute from "./routes/persons";
 
 import "dotenv/config";
 
@@ -15,6 +16,7 @@ fastify.register(cors, {
   credentials: true,
 });
 fastify.register(databaseConfig);
+fastify.register(personsRoute, { prefix: "/api/persons" });
 fastify.register(trainingRoute, { prefix: "/api/training" });
 fastify.register(addressRoute, { prefix: "/api/address" });
 fastify.register(agenciesRoute, { prefix: "/api/agencies" });

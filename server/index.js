@@ -9,6 +9,7 @@ const database_1 = __importDefault(require("./config/database"));
 const trainings_1 = __importDefault(require("./routes/trainings"));
 const address_1 = __importDefault(require("./routes/address"));
 const agencies_1 = __importDefault(require("./routes/agencies"));
+const persons_1 = __importDefault(require("./routes/persons"));
 require("dotenv/config");
 const fastify = (0, fastify_1.default)({ logger: true });
 fastify.register(cors_1.default, {
@@ -17,6 +18,7 @@ fastify.register(cors_1.default, {
     credentials: true,
 });
 fastify.register(database_1.default);
+fastify.register(persons_1.default, { prefix: "/api/persons" });
 fastify.register(trainings_1.default, { prefix: "/api/training" });
 fastify.register(address_1.default, { prefix: "/api/address" });
 fastify.register(agencies_1.default, { prefix: "/api/agencies" });

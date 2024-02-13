@@ -30,7 +30,7 @@ const CBTISLayout = () => {
     key: React.Key;
     id: number;
     fk_city_id: number;
-    name: string;
+    barangay: string;
   }
 
   interface Training {
@@ -165,13 +165,13 @@ const CBTISLayout = () => {
   const [organizationData, setOrganizationData] = useState<Organization[]>([]);
 
   useEffect(() => {
-    const trainingData = fetch("http://192.168.1.69:3000/api/training").then((res) =>
-      res.json()
-    );
-
-    const barangayData = fetch("http://192.168.1.69:3000/api/address/barangay").then(
+    const trainingData = fetch("http://192.168.1.69:3000/api/training").then(
       (res) => res.json()
     );
+
+    const barangayData = fetch(
+      "http://192.168.1.69:3000/api/address/barangay"
+    ).then((res) => res.json());
 
     const organizationsData = fetch(
       "http://192.168.1.69:3000/api/agencies"
@@ -233,6 +233,9 @@ const CBTISLayout = () => {
   return (
     <>
       <div className="flex flex-col">
+        <Typography.Title level={1}>
+          Capacity Building and Training Information System
+        </Typography.Title>
         <div className="flex">
           <Table dataSource={trainingData} columns={trainingColumn} />
         </div>
@@ -417,11 +420,16 @@ const CBTISLayout = () => {
                 >
                   <Select
                     placeholder="Please select an Organization"
+                    optionFilterProp="label"
                     style={{ width: "100%" }}
                     showSearch
                   >
                     {organizationData.map((item, index) => (
-                      <Option key={index} value={item.id}>
+                      <Option
+                        key={index}
+                        label={item.office_name}
+                        value={item.id}
+                      >
                         {item.office_name}
                       </Option>
                     ))}
@@ -568,10 +576,14 @@ const CBTISLayout = () => {
                       { required: true, message: "Please select a Barangay" },
                     ]}
                   >
-                    <Select placeholder="Select a Barangay" showSearch>
+                    <Select
+                      placeholder="Select a Barangay"
+                      optionFilterProp="label"
+                      showSearch
+                    >
                       {barangay.map((item, index) => (
-                        <Option key={index} value={item.id}>
-                          {item.name}
+                        <Option key={index} label={item.barangay} value={item.id}>
+                          {item.barangay}
                         </Option>
                       ))}
                     </Select>
