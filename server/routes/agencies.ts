@@ -53,6 +53,43 @@ async function routes(
       return reply.code(200).send(rows);
     },
   });
+
+  fastify.post("/create", {
+    handler: async (
+      request: FastifyRequest<{
+        Body: {
+          organization_name: string;
+          acronym: string;
+          contact_number: string;
+          email_address: string;
+          full_address: string;
+          sitio: string;
+          barangay: string;
+        };
+      }>,
+      reply: FastifyReply
+    ) => {
+      const organization = request.body;
+      const connection = await fastify.mysql.getConnection();
+
+      const [row, fields] = await connection.query(
+        "INSERT INTO offices (office_name, acronym, office_contact_number, office_email_address, full_address, sitio, fk_barangay_id ) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        [
+          organization.organization_name,
+          organization.acronym,
+          organization.contact_number,
+          organization.email_address,
+          organization.full_address,
+          organization.sitio,
+          organization.barangay,
+        ]
+      );
+
+      connection.release();
+
+      reply.code(201).send("Success");
+    },
+  });
 }
 
 export default routes;

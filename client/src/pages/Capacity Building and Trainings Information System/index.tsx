@@ -193,7 +193,7 @@ const CBTISLayout = () => {
   const postOrganization = async (values: any) => {
     setLoading(true);
     try {
-      await fetch("http://192.168.1.69:3000/organizations/create", {
+      await fetch("http://192.168.1.69:3000/api/agencies/create", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -211,7 +211,7 @@ const CBTISLayout = () => {
     setLoading(true);
     try {
       console.log(values);
-      await fetch("http://192.168.1.69:3000/training/create", {
+      await fetch("http://192.168.1.69:3000/api/training/create", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -582,7 +582,11 @@ const CBTISLayout = () => {
                       showSearch
                     >
                       {barangay.map((item, index) => (
-                        <Option key={index} label={item.barangay} value={item.id}>
+                        <Option
+                          key={index}
+                          label={item.barangay}
+                          value={item.id}
+                        >
                           {item.barangay}
                         </Option>
                       ))}

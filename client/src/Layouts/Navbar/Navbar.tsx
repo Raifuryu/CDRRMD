@@ -58,6 +58,9 @@ function Navbar() {
                   <li>
                     <Link to="/directory">Directory</Link>
                   </li>
+                  <li>
+                    <Link to="/monitoring-and-evaluation">LDRRMP</Link>
+                  </li>
                 </ul>
               </li>
             </ul>
@@ -88,6 +91,9 @@ function Navbar() {
             </li>
             <li>
               <Link to="/directory">Directory</Link>
+            </li>
+            <li>
+              <Link to="/monitoring-and-evaluation">LDRRMP</Link>
             </li>
           </ul>
         </div>

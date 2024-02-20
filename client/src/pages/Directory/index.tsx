@@ -19,13 +19,13 @@ const columns = [
   { header: "Office", accessorKey: "acronym", filterFn: "fuzzy" },
   {
     header: "Phone Number",
-    accessorKey: "number",
+    accessorKey: "contact_number",
     cell: ({ row }: { row: any }) => {
-      return <a href={`tel:${row.original.number}`}>{row.original.number}</a>;
+      return <a href={`tel:${row.original.contact_number}`}>{row.original.contact_number}</a>;
     },
     enableColumnFilter: true,
   },
-  { header: "Email Address", accessorKey: "email" },
+  { header: "Email Address", accessorKey: "email_address" },
 ];
 
 const DirectoryLayout = () => {
@@ -33,7 +33,7 @@ const DirectoryLayout = () => {
 
   const getData = async () => {
     try {
-      const response = await fetch("http://192.168.1.69:3000/directory", {
+      const response = await fetch("http://192.168.1.69:3000/api/directory", {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       });

@@ -5,6 +5,7 @@ import FileSystemDashboard from "./pages/Data Bank";
 import CBTISLayout from "./pages/Capacity Building and Trainings Information System";
 import Training from "./pages/Capacity Building and Trainings Information System/DetailedPage";
 import DirectoryLayout from "./pages/Directory";
+import MnELayout from "./pages/Monitoring and Evaluation/index";
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
           <Route path="training" element={<CBTISLayout />} />
           <Route path="training/:trainingId" element={<Training />} />
           <Route path="directory" element={<DirectoryLayout />} />
+          <Route path="monitoring-and-evaluation" element={<MnELayout />} />
         </Route>
       </Routes>
     </BrowserRouter>

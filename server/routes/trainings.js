@@ -1,5 +1,12 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
+const fs_1 = __importDefault(require("fs"));
+const util_1 = __importDefault(require("util"));
+const stream_1 = require("stream");
+const pump = util_1.default.promisify(stream_1.pipeline);
 async function routes(fastify, options) {
     fastify.addHook("onResponse", async (request, reply) => {
         fastify.log.info(`Responding: ${reply.elapsedTime}`);
@@ -31,17 +38,89 @@ async function routes(fastify, options) {
             reply.code(200).send(rows);
         },
     });
+    fastify.post("/:id/upload/AAR", {
+        handler: async (request, reply) => {
+            const id = request.params.id;
+            const data = await request.file();
+            // Check if directory exists, if not create it
+            const directoryPath = `./uploads/${id}`;
+            if (!fs_1.default.existsSync(directoryPath)) {
+                await fs_1.default.promises.mkdir(directoryPath, { recursive: true });
+            }
+            // Handle the case where data is undefined
+            if (data) {
+                const connection = await fastify.mysql.getConnection();
+                const [rows, fields] = await connection.query(`UPDATE trainings SET after_activity_report = 'true' WHERE id = ${id}`);
+                const filePath = `./uploads/${id}/AAR.pdf`;
+                await fs_1.default.unlink(filePath, (err) => { });
+                const writeStream = fs_1.default.createWriteStream(filePath);
+                data.file.pipe(writeStream);
+                // Return response once file is uploaded
+                data.file.on("end", () => {
+                    reply.code(200).send({ success: true });
+                });
+            }
+            else {
+                reply
+                    .code(400)
+                    .send({ success: false, message: "No file data received" });
+            }
+        },
+    });
+    fastify.post("/:id/upload/documentations", {
+        handler: async (request, reply) => {
+            const id = request.params.id;
+            const data = await request.file();
+            // Check if directory exists, if not create it
+            const directoryPath = `./uploads/${id}`;
+            if (!fs_1.default.existsSync(directoryPath)) {
+                await fs_1.default.promises.mkdir(directoryPath, { recursive: true });
+            }
+            // Handle the case where data is undefined
+            if (data) {
+                const connection = await fastify.mysql.getConnection();
+                const [rows, fields] = await connection.query(`UPDATE trainings SET documentations = 'true' WHERE id = ${id}`);
+                const filePath = `./uploads/${id}/AAR.pdf`;
+                const writeStream = fs_1.default.createWriteStream(filePath);
+                data.file.pipe(writeStream);
+                reply.code(200).send({ success: true });
+            }
+            else {
+                reply
+                    .code(400)
+                    .send({ success: false, message: "No file data received" });
+            }
+        },
+    });
+    fastify.post("/create", {
+        handler: async (request, reply) => {
+            const training = request.body;
+            const connection = await fastify.mysql.getConnection();
+            const [rows, fields] = await connection.query("INSERT INTO trainings(fk_office_id, title, venue, trainer, contact_person, contact_person_number, remarks, start_date, end_date) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)", [
+                training.trainee,
+                training.title,
+                training.venue,
+                training.trainer,
+                training.contact_person,
+                training.contact_person_number,
+                training.remarks,
+                training.start_date,
+                training.end_date,
+            ]);
+            connection.release();
+            reply.code(201).send("success");
+        },
+    });
     fastify.post("/:id/create/participants", {
         handler: async (request, reply) => {
             const id = request.params.id;
             const participant = request.body;
-            console.log(participant);
             const connection = await fastify.mysql.getConnection();
             participant.map(async (value) => {
                 const [rows, fields] = await connection.query("INSERT INTO trainings_participants(fk_training_id, fk_participant_id) VALUES(?,?)", [id, value]);
             });
             connection.release();
-            reply.code(200).send("success");
+            reply.code(201).send("success");
         },
     });
 }

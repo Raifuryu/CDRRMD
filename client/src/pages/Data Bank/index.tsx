@@ -27,7 +27,7 @@ export default function Dashboard() {
 
   const postData = async () => {
     try {
-      await fetch("http://192.168.1.69:3000/file/create", {
+      await fetch("http://192.168.1.69:3000/api/file/create", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -54,7 +54,7 @@ export default function Dashboard() {
 
   const getData = async () => {
     try {
-      const response = await fetch("http://192.168.1.69:3000/file", {
+      const response = await fetch("http://192.168.1.69:3000/api/file", {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       });
@@ -85,6 +85,7 @@ export default function Dashboard() {
         <div className="flex mt-5 mb-5">
           <div className="overflow-x-auto">
             <DataGrid
+              getRowId={(row) => row.policies_id}
               rows={data}
               columns={columns}
               getRowHeight={() => "auto"}
