@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import Papa from "papaparse";
 import {
   Button,
+  Carousel,
   Checkbox,
   Col,
   DatePicker,
@@ -12,6 +13,8 @@ import {
   FloatButton,
   Form,
   Input,
+  Image,
+  Modal,
   Row,
   Select,
   SelectProps,
@@ -31,6 +34,7 @@ import {
   DeleteRowOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
+import ButtonCancelTraining from "./ButtonCancelTraining";
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
@@ -94,8 +98,8 @@ const DeatailedPage = () => {
     remarks: string;
     start_date: Date;
     end_date: Date;
-    after_activity_report: boolean;
-    documentation: boolean;
+    after_activity_report: string;
+    documentation: string;
     pax: number;
     status: number;
   }
@@ -216,6 +220,7 @@ const DeatailedPage = () => {
   const [participantsData, setParticipantsData] = useState<Participant[]>([]);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [totalSelectedPerson, setTotalSelectedPerson] = useState(0);
+  const [documentationFiles, setDocumentationFiles] = useState([]);
 
   const [loading, setLoading] = useState(true);
   const [addParticipantsDrawerState, setAddParticipantsDrawerState] =
@@ -223,6 +228,8 @@ const DeatailedPage = () => {
 
   const [participantsListDrawerState, setParticipantsListDrawerState] =
     useState(false);
+
+  const [documentationModalState, setDocumentationModalState] = useState(false);
 
   const [isLgbtq, setIsLgbtq] = useState(false);
 
@@ -242,6 +249,14 @@ const DeatailedPage = () => {
     setParticipantsListDrawerState(false);
   };
 
+  const showDocumentationModal = () => {
+    setDocumentationModalState(true);
+  };
+
+  const closeDocumentationModal = () => {
+    setDocumentationModalState(false);
+  };
+
   useEffect(() => {
     const trainingDetailsRequest = fetch(
       `http://192.168.1.69:3000/api/training/${trainingId}`
@@ -255,11 +270,22 @@ const DeatailedPage = () => {
       (res) => res.json()
     );
 
-    Promise.all([trainingDetailsRequest, barangayRequest, personsRequest])
+    const documentationRequest = fetch(
+      `http://192.168.1.69:3000/api/training/${trainingId}/documentations`
+    ).then((res) => res.json());
+
+    Promise.all([
+      trainingDetailsRequest,
+      barangayRequest,
+      personsRequest,
+      // documentationRequest,
+    ])
       .then(([trainingData, barangayData, personData]) => {
         setBarangay(barangayData);
         setTrainingData(trainingData[0]);
         setPersons(personData);
+        // setDocumentationFiles(documentationData);
+        // console.log(documentationData);
       })
       .catch((error) => {
         console.error("Error fetching data:", error);
@@ -288,7 +314,7 @@ const DeatailedPage = () => {
           console.error("Error fetching organization data:", error);
           setLoading(false);
         });
-    }, 1000);
+    }, 100000);
     return () => clearInterval(interval);
   }, []);
 
@@ -447,6 +473,25 @@ const DeatailedPage = () => {
     },
   };
 
+  // const documentationProps: UploadProps = {
+  //   name: "file",
+
+  //   headers: {
+  //     authorization: "authorization-text",
+  //   },
+  //   onChange(info) {
+  //     console.log(info);
+  //     if (info.file.status !== "uploading") {
+  //       console.log(info.file, info.fileList);
+  //     }
+  //     if (info.file.status === "done") {
+  //       message.success(`${info.file.name} file uploaded successfully`);
+  //     } else if (info.file.status === "error") {
+  //       message.error(`${info.file.name} file upload failed.`);
+  //     }
+  //   },
+  // };
+
   const handleChange = (value: []) => {
     setTotalSelectedPerson(value.length);
     setTrainingParticipantsList(value);
@@ -533,36 +578,61 @@ const DeatailedPage = () => {
             </Col>
           </Row>
           <Row gutter={[16, 4]}>
-            <Col span={4}>
-              {trainingData?.after_activity_report ? (
-                <Form.Item
-                  name="upload_aar"
-                  label="Upload After Activity Report"
-                >
-                  <Upload {...AARprops} maxCount={1} accept=".pdf">
-                    <Button icon={<UploadOutlined />}>Upload (Max: 1)</Button>
-                  </Upload>
-                </Form.Item>
-              ) : (
-                <Button>Open AAR</Button>
-              )}
-            </Col>
-            <Col span={4}>
-              <Form.Item name="documentation" label="Documentation">
-                <Upload
-                  action="https://run.mocky.io/v3/435e224c-44fb-4773-9faf-380c5e6a2188"
-                  listType="picture"
-                  maxCount={3}
-                >
-                  <Button icon={<UploadOutlined />}>Upload (Max: 3)</Button>
+            <Col span={"auto"}>
+              <Form.Item name="upload_aar" label="Upload After Activity Report">
+                <Upload {...AARprops} maxCount={1} accept=".pdf">
+                  <Button icon={<UploadOutlined />}>Upload (Max: 1)</Button>
                 </Upload>
               </Form.Item>
             </Col>
-            {/* <Col span={4}>
-            <Form.Item>
-              <Button>Update</Button>
-            </Form.Item>
-          </Col> */}
+            <Col span={"auto"}>
+              <Form.Item name="documentation" label="Documentation">
+                <Upload
+                  action={`http://192.168.1.69:3000/api/training/${trainingId}/upload/documentation`}
+                  listType="picture"
+                  accept="image/png, image/jpeg"
+                  multiple
+                >
+                  <Button icon={<UploadOutlined />}>Upload</Button>
+                </Upload>
+              </Form.Item>
+            </Col>
+            <Col span={"auto"}>
+              <Form.Item>
+                {trainingData?.after_activity_report ? (
+                  <Button>
+                    <a
+                      href={`../uploads/trainings/${new Date(
+                        trainingData.start_date
+                      ).getFullYear()}/${trainingId}/AAR.pdf`}
+                      target="_blank"
+                    >
+                      Open After Activity Report
+                    </a>
+                  </Button>
+                ) : (
+                  <Button disabled title="Training data not available">
+                    Open After Activity Report
+                  </Button>
+                )}
+              </Form.Item>
+            </Col>
+            <Col span={4}>
+              <Form.Item>
+                {trainingData?.documentation == undefined ? (
+                  <Button onClick={() => setDocumentationModalState(true)}>
+                    Open Documentation
+                  </Button>
+                ) : (
+                  <Button disabled title="Training data not available">
+                    Open Documentation
+                  </Button>
+                )}
+              </Form.Item>
+            </Col>
+            <Col span={4}>
+              <ButtonCancelTraining />
+            </Col>
           </Row>
           <Row gutter={[16, 4]}>
             <Divider orientation="left">Organization Details</Divider>
@@ -1008,6 +1078,30 @@ const DeatailedPage = () => {
           columns={ParticipantColumn}
         />
       </div>
+      <Modal
+        centered
+        title="Documentation"
+        open={documentationModalState}
+        onCancel={() => setDocumentationModalState(false)}
+        width={1000}
+      >
+        <Carousel effect="fade">
+          {documentationFiles && trainingData ? (
+            documentationFiles.map((file, index) => (
+              <div key={index}>
+                <Image
+                  width={200}
+                  src={`../uploads/trainings/${new Date(
+                    trainingData.start_date
+                  ).getFullYear()}/${trainingId}/${file}`}
+                />
+              </div>
+            ))
+          ) : (
+            <div>No documentation files available</div>
+          )}
+        </Carousel>
+      </Modal>
     </>
   );
 };

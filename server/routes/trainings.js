@@ -38,20 +38,37 @@ async function routes(fastify, options) {
             reply.code(200).send(rows);
         },
     });
+    fastify.get("/:id/documentations", {
+        handler: async (request, reply) => {
+            let start_date = new Date();
+            const id = request.params.id;
+            const connection = await fastify.mysql.getConnection();
+            const [row, fields] = (await connection.query(`SELECT start_date FROM trainings WHERE id = ${id}`));
+            start_date = new Date(row[0].start_date);
+            console.log(__dirname);
+            fs_1.default.readdir(`../client/public/uploads/trainings/${new Date(start_date).getFullYear()}/${id}/`, (err, files) => {
+                console.log(JSON.stringify(files));
+                reply.send(JSON.stringify(files));
+            });
+        },
+    });
     fastify.post("/:id/upload/AAR", {
         handler: async (request, reply) => {
+            let start_date = new Date();
             const id = request.params.id;
             const data = await request.file();
+            const connection = await fastify.mysql.getConnection();
+            const [row, fields] = (await connection.query(`SELECT start_date FROM trainings WHERE id = ${id}`));
+            start_date = new Date(row[0].start_date);
             // Check if directory exists, if not create it
-            const directoryPath = `./uploads/${id}`;
+            const directoryPath = `../client/public/uploads/trainings/${start_date.getFullYear()}/${id}`;
             if (!fs_1.default.existsSync(directoryPath)) {
                 await fs_1.default.promises.mkdir(directoryPath, { recursive: true });
             }
             // Handle the case where data is undefined
             if (data) {
-                const connection = await fastify.mysql.getConnection();
                 const [rows, fields] = await connection.query(`UPDATE trainings SET after_activity_report = 'true' WHERE id = ${id}`);
-                const filePath = `./uploads/${id}/AAR.pdf`;
+                const filePath = `${directoryPath}/AAR.pdf`;
                 await fs_1.default.unlink(filePath, (err) => { });
                 const writeStream = fs_1.default.createWriteStream(filePath);
                 data.file.pipe(writeStream);
@@ -67,22 +84,28 @@ async function routes(fastify, options) {
             }
         },
     });
-    fastify.post("/:id/upload/documentations", {
+    fastify.post("/:id/upload/documentation", {
         handler: async (request, reply) => {
+            let start_date = new Date();
             const id = request.params.id;
-            const data = await request.file();
+            const data = await request.files();
+            const connection = await fastify.mysql.getConnection();
+            const [row, fields] = (await connection.query(`SELECT start_date FROM trainings WHERE id = ${id}`));
+            start_date = new Date(row[0].start_date);
             // Check if directory exists, if not create it
-            const directoryPath = `./uploads/${id}`;
+            const directoryPath = `../client/public/uploads/trainings/${start_date.getFullYear()}/${id}`;
+            // Check if directory exists, if not create it
             if (!fs_1.default.existsSync(directoryPath)) {
                 await fs_1.default.promises.mkdir(directoryPath, { recursive: true });
             }
             // Handle the case where data is undefined
             if (data) {
-                const connection = await fastify.mysql.getConnection();
-                const [rows, fields] = await connection.query(`UPDATE trainings SET documentations = 'true' WHERE id = ${id}`);
-                const filePath = `./uploads/${id}/AAR.pdf`;
-                const writeStream = fs_1.default.createWriteStream(filePath);
-                data.file.pipe(writeStream);
+                for await (const part of data) {
+                    const [rows, fields] = await connection.query(`UPDATE trainings SET documentations = 'true' WHERE id = ${id}`);
+                    const filePath = `${directoryPath}/${part.filename}`;
+                    const writeStream = fs_1.default.createWriteStream(filePath);
+                    part.file.pipe(writeStream);
+                }
                 reply.code(200).send({ success: true });
             }
             else {
