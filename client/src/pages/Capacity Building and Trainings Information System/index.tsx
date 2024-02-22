@@ -136,8 +136,17 @@ const CBTISLayout = () => {
       key: "status",
       sorter: (a, b) => a.status - b.status,
       render: (status: number) => (
-        <Title level={5} type={status === 1 ? "warning" : "success"}>
-          {status === 1 ? "Active" : "Done"}
+        <Title
+          level={5}
+          type={status === 1 ? "warning" : status === 0 ? "success" : "danger"}
+        >
+          {status === 1 ? (
+            <span>Active</span>
+          ) : status === 0 ? (
+            <span>Done</span>
+          ) : (
+            <span>Cancelled</span>
+          )}
         </Title>
       ),
     },

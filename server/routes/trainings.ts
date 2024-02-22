@@ -33,7 +33,9 @@ async function routes(
     ) => {
       const connection = await fastify.mysql.getConnection();
 
-      const [rows, fields] = await connection.query("SELECT * FROM trainings");
+      const [rows, fields] = await connection.query(
+        "SELECT trainings.*, (SELECT COUNT(*) FROM trainings_participants WHERE trainings_participants.fk_training_id = trainings.id) AS pax FROM trainings"
+      );
       connection.release();
 
       return reply.code(200).send(rows);
@@ -53,13 +55,13 @@ async function routes(
       const connection = await fastify.mysql.getConnection();
 
       const [rows, fields] = await connection.query(
-        "SELECT * FROM trainings WHERE id = ?",
+        "SELECT trainings.*, (SELECT COUNT(*) FROM trainings_participants WHERE trainings_participants.fk_training_id = trainings.id) AS pax FROM trainings WHERE id = ?;",
         [id]
       );
 
       connection.release();
 
-      return reply.code(200).send(rows);
+      reply.code(200).send(rows);
     },
   });
 
@@ -109,7 +111,7 @@ async function routes(
           start_date
         ).getFullYear()}/${id}/`,
         (err, files) => {
-          reply.send(JSON.stringify(files));
+          // reply.send(JSON.stringify(files));
         }
       );
     },
@@ -269,6 +271,30 @@ async function routes(
           [id, value]
         );
       });
+      connection.release();
+      reply.code(201).send("success");
+    },
+  });
+
+  fastify.put("/:id", {
+    handler: async (
+      request: FastifyRequest<{
+        Body: {
+          remarks: string;
+        };
+        Params: {
+          id: number;
+        };
+      }>,
+      reply: FastifyReply
+    ) => {
+      const id = request.params.id;
+      const remarks = request.body.remarks;
+      const connection = await fastify.mysql.getConnection();
+      const [rows, fields] = await connection.query(
+        "UPDATE trainings SET status = ?, remarks = ? WHERE id = ?;",
+        [2, remarks || "", id]
+      );
       connection.release();
       reply.code(201).send("success");
     },

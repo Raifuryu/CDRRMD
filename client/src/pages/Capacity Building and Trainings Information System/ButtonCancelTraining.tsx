@@ -1,8 +1,13 @@
-import React, { useEffect, useState } from "react";
-import { Button, Form, Modal } from "antd";
+import React, { useState } from "react";
+import { Button, Form, message, Modal } from "antd";
 import TextArea from "antd/es/input/TextArea";
 
-const ButtonCancelTraining: React.FC = () => {
+interface props {
+  trainingId: string;
+}
+
+const ButtonCancelTraining: React.FC<props> = ({ trainingId }) => {
+  const [messageApi, contextHolder] = message.useMessage();
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -12,27 +17,40 @@ const ButtonCancelTraining: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleOk = () => {
-    // do update process here
+  const handleOk = async () => {
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      setIsModalOpen(false);
-    }, 3000);
+
+    try {
+      // Assuming putData is a function that sends a PUT request to update data
+      await putData(); // This function should handle the API call to update data
+      messageApi.open({
+        type: "success",
+        content: "Training Cancelled Successfully",
+      });
+      console.log("Data updated successfully");
+      // Optionally, you can do something after successful update
+
+      setIsModalOpen(false); // Close the modal upon successful update
+    } catch (error) {
+      console.error("Error updating data:", error);
+      // Handle errors appropriately, e.g., show an error message to the user
+    } finally {
+      setLoading(false); // Regardless of success or failure, setLoading back to false
+    }
   };
 
   const handleCancel = () => {
     setIsModalOpen(false);
   };
 
-  // update this
-  useEffect(() => {
-    fetch(``, {
+  const putData = () => {
+    const remarks = form.getFieldsValue().remarks;
+    fetch(`http://192.168.1.69:3000/api/training/${trainingId}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify([]),
+      body: JSON.stringify({ remarks }),
     })
       .then((response) => {
         if (!response.ok) {
@@ -47,10 +65,11 @@ const ButtonCancelTraining: React.FC = () => {
       .catch((error) => {
         console.error("Error posting participants data:", error.message);
       });
-  });
+  };
 
   return (
     <>
+      {contextHolder}
       <Button type="default" danger onClick={showModal}>
         Cancel Training
       </Button>
@@ -69,7 +88,7 @@ const ButtonCancelTraining: React.FC = () => {
         ]}
       >
         <Form form={form} layout="vertical">
-          <Form.Item>
+          <Form.Item label="Remarks" name="remarks">
             <TextArea rows={4} />
           </Form.Item>
         </Form>

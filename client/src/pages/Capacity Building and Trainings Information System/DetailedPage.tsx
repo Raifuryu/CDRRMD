@@ -220,7 +220,7 @@ const DeatailedPage = () => {
   const [participantsData, setParticipantsData] = useState<Participant[]>([]);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [totalSelectedPerson, setTotalSelectedPerson] = useState(0);
-  const [documentationFiles, setDocumentationFiles] = useState([]);
+  // const [documentationFiles, setDocumentationFiles] = useState([]);
 
   const [loading, setLoading] = useState(true);
   const [addParticipantsDrawerState, setAddParticipantsDrawerState] =
@@ -314,7 +314,7 @@ const DeatailedPage = () => {
           console.error("Error fetching organization data:", error);
           setLoading(false);
         });
-    }, 100000);
+    }, 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -517,7 +517,22 @@ const DeatailedPage = () => {
     <>
       <div className="m-5">
         <Form form={trainingForm} layout="vertical">
-          <Title level={2}>Training Details</Title>
+          <Title level={2}>
+            Training Details
+            {trainingData?.status === 1 ? (
+              <Typography.Title level={4} type="warning">
+                Status: Active
+              </Typography.Title>
+            ) : trainingData?.status === 0 ? (
+              <Typography.Title level={4} type="success">
+                Status: Done
+              </Typography.Title>
+            ) : (
+              <Typography.Title level={4} type="danger">
+                Status: Cancelled
+              </Typography.Title>
+            )}
+          </Title>
           <Row gutter={[16, 4]}>
             <Col span={1}>
               <Form.Item name="id" label="ID">
@@ -552,9 +567,9 @@ const DeatailedPage = () => {
             </Col>
           </Row>
           <Row gutter={16}>
-            <Col span={4}>
+            <Col span={1}>
               <Form.Item name="pax" label="Pax">
-                <Input disabled />
+                <Input defaultValue={trainingData?.pax} disabled />
               </Form.Item>
             </Col>
             <Col span={4}>
@@ -617,10 +632,13 @@ const DeatailedPage = () => {
                 )}
               </Form.Item>
             </Col>
-            <Col span={4}>
+            <Col span={"auto"}>
               <Form.Item>
                 {trainingData?.documentation == undefined ? (
-                  <Button onClick={() => setDocumentationModalState(true)}>
+                  <Button
+                    disabled
+                    onClick={() => setDocumentationModalState(true)}
+                  >
                     Open Documentation
                   </Button>
                 ) : (
@@ -630,8 +648,8 @@ const DeatailedPage = () => {
                 )}
               </Form.Item>
             </Col>
-            <Col span={4}>
-              <ButtonCancelTraining />
+            <Col span={"auto"}>
+              <ButtonCancelTraining trainingId={`${trainingId}`} />
             </Col>
           </Row>
           <Row gutter={[16, 4]}>
@@ -1085,7 +1103,7 @@ const DeatailedPage = () => {
         onCancel={() => setDocumentationModalState(false)}
         width={1000}
       >
-        <Carousel effect="fade">
+        {/* <Carousel effect="fade">
           {documentationFiles && trainingData ? (
             documentationFiles.map((file, index) => (
               <div key={index}>
@@ -1100,7 +1118,7 @@ const DeatailedPage = () => {
           ) : (
             <div>No documentation files available</div>
           )}
-        </Carousel>
+        </Carousel> */}
       </Modal>
     </>
   );

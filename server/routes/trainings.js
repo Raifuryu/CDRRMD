@@ -14,7 +14,7 @@ async function routes(fastify, options) {
     fastify.get("/", {
         handler: async (request, reply) => {
             const connection = await fastify.mysql.getConnection();
-            const [rows, fields] = await connection.query("SELECT * FROM trainings");
+            const [rows, fields] = await connection.query("SELECT trainings.*, (SELECT COUNT(*) FROM trainings_participants WHERE trainings_participants.fk_training_id = trainings.id) AS pax FROM trainings");
             connection.release();
             return reply.code(200).send(rows);
         },
@@ -23,9 +23,9 @@ async function routes(fastify, options) {
         handler: async (request, reply) => {
             const id = request.params.id;
             const connection = await fastify.mysql.getConnection();
-            const [rows, fields] = await connection.query("SELECT * FROM trainings WHERE id = ?", [id]);
+            const [rows, fields] = await connection.query("SELECT trainings.*, (SELECT COUNT(*) FROM trainings_participants WHERE trainings_participants.fk_training_id = trainings.id) AS pax FROM trainings WHERE id = ?;", [id]);
             connection.release();
-            return reply.code(200).send(rows);
+            reply.code(200).send(rows);
         },
     });
     fastify.get("/:id/participants", {
@@ -47,8 +47,7 @@ async function routes(fastify, options) {
             start_date = new Date(row[0].start_date);
             console.log(__dirname);
             fs_1.default.readdir(`../client/public/uploads/trainings/${new Date(start_date).getFullYear()}/${id}/`, (err, files) => {
-                console.log(JSON.stringify(files));
-                reply.send(JSON.stringify(files));
+                // reply.send(JSON.stringify(files));
             });
         },
     });
@@ -142,6 +141,16 @@ async function routes(fastify, options) {
             participant.map(async (value) => {
                 const [rows, fields] = await connection.query("INSERT INTO trainings_participants(fk_training_id, fk_participant_id) VALUES(?,?)", [id, value]);
             });
+            connection.release();
+            reply.code(201).send("success");
+        },
+    });
+    fastify.put("/:id", {
+        handler: async (request, reply) => {
+            const id = request.params.id;
+            const remarks = request.body.remarks;
+            const connection = await fastify.mysql.getConnection();
+            const [rows, fields] = await connection.query("UPDATE trainings SET status = ?, remarks = ? WHERE id = ?;", [2, remarks || "", id]);
             connection.release();
             reply.code(201).send("success");
         },
