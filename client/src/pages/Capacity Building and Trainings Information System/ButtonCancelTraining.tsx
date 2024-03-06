@@ -1,13 +1,17 @@
 import React, { useState } from "react";
-import { Button, Form, message, Modal } from "antd";
+import { Button, Form, Modal, notification } from "antd";
 import TextArea from "antd/es/input/TextArea";
 
 interface props {
   trainingId: string;
+  trainingStatus: number | undefined;
 }
 
-const ButtonCancelTraining: React.FC<props> = ({ trainingId }) => {
-  const [messageApi, contextHolder] = message.useMessage();
+const ButtonCancelTraining: React.FC<props> = ({
+  trainingId,
+  trainingStatus,
+}) => {
+  const [messageApi, contextHolder] = notification.useNotification();
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -23,9 +27,8 @@ const ButtonCancelTraining: React.FC<props> = ({ trainingId }) => {
     try {
       // Assuming putData is a function that sends a PUT request to update data
       await putData(); // This function should handle the API call to update data
-      messageApi.open({
-        type: "success",
-        content: "Training Cancelled Successfully",
+      messageApi["success"]({
+        message: "Training Cancelled Successfully",
       });
       console.log("Data updated successfully");
       // Optionally, you can do something after successful update
@@ -45,7 +48,7 @@ const ButtonCancelTraining: React.FC<props> = ({ trainingId }) => {
 
   const putData = () => {
     const remarks = form.getFieldsValue().remarks;
-    fetch(`http://192.168.1.69:3000/api/training/${trainingId}`, {
+    fetch(`http://192.168.1.69:3000/api/training/${trainingId}/status`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -54,23 +57,37 @@ const ButtonCancelTraining: React.FC<props> = ({ trainingId }) => {
     })
       .then((response) => {
         if (!response.ok) {
+          messageApi["error"]({
+            message: "Failed to Update Data",
+          });
           throw new Error("Failed to post participants data");
         }
         return response.json();
       })
       .then((data) => {
         console.log("Participants data posted successfully:", data);
+        messageApi["success"]({
+          message: "Data Updated",
+        });
         // Optionally, you can update the component state or trigger other actions upon successful posting
       })
       .catch((error) => {
         console.error("Error posting participants data:", error.message);
+        messageApi["error"]({
+          message: "Failed to Update Data",
+        });
       });
   };
 
   return (
     <>
       {contextHolder}
-      <Button type="default" danger onClick={showModal}>
+      <Button
+        type="default"
+        danger
+        onClick={showModal}
+        disabled={trainingStatus === 2 || trainingStatus === 0}
+      >
         Cancel Training
       </Button>
       <Modal

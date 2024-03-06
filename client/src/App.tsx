@@ -9,7 +9,7 @@ import MnELayout from "./pages/Monitoring and Evaluation/index";
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/">
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Welcome />} />

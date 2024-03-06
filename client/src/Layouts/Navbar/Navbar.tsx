@@ -87,7 +87,7 @@ function Navbar() {
               </a>
             </li>
             <li>
-              <Link to="/training">CBTIS</Link>
+              <Link to="/training">CBIS</Link>
             </li>
             <li>
               <Link to="/directory">Directory</Link>

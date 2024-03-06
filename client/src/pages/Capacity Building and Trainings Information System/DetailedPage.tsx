@@ -13,7 +13,6 @@ import {
   FloatButton,
   Form,
   Input,
-  Image,
   Modal,
   Row,
   Select,
@@ -25,6 +24,7 @@ import {
   Upload,
   UploadProps,
   message,
+  notification,
 } from "antd";
 import TextArea from "antd/es/input/TextArea";
 import {
@@ -35,6 +35,9 @@ import {
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import ButtonCancelTraining from "./ButtonCancelTraining";
+import ButtonOpenAAR from "./ButtonOpenAAR";
+import ButtonOpenDocumentation from "./ButtonOpenDocumentation";
+import ButtonDeleteTraining from "./ButtonDeleteTraining";
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
@@ -49,7 +52,7 @@ const DeatailedPage = () => {
   }
 
   interface Participant {
-    key: React.Key;
+    training_participant_id: number;
     first_name: string;
     middle_name: string;
     last_name: string;
@@ -70,8 +73,7 @@ const DeatailedPage = () => {
   }
 
   interface Person {
-    key: React.Key;
-    id: string;
+    person_id: string;
     first_name: string;
     middle_name: string;
     last_name: string;
@@ -87,26 +89,30 @@ const DeatailedPage = () => {
   }
 
   interface Training {
-    key: React.Key;
-    id: number;
-    fk_office_id: number;
-    title: string;
+    training_id: number;
+    fk_trainer_id: string;
+    fk_trainee_id: number;
+    course: string;
     venue: string;
-    trainer: string;
     contact_person: string;
     contact_person_number: string;
     remarks: string;
     start_date: Date;
     end_date: Date;
-    after_activity_report: string;
-    documentation: string;
+    after_activity_report: boolean;
+    documentations: boolean;
     pax: number;
     status: number;
   }
 
+  interface Course {
+    training_course_id: number;
+    course: string;
+    abbreviation: string;
+  }
+
   interface Organization {
-    key: React.Key;
-    id: number;
+    office_id: number;
     fk_barangay_id: number;
     acronym: string;
     office_name: string;
@@ -205,9 +211,10 @@ const DeatailedPage = () => {
       key: "barangay",
     },
   ];
-
+  const [messageApi, contextHolder] = notification.useNotification();
   const [participantsForm] = Form.useForm();
   const [trainingForm] = Form.useForm();
+  const [existingTrainingParticipants] = Form.useForm();
 
   const { trainingId } = useParams();
 
@@ -216,13 +223,16 @@ const DeatailedPage = () => {
   const [persons, setPersons] = useState<Person[]>([]);
   const [trainingParticipantsList, setTrainingParticipantsList] = useState([]);
   const [trainingData, setTrainingData] = useState<Training>();
+  const [trainingCourses, setTrainingCourses] = useState<Course[]>([]);
   const [organizationData, setOrganizationData] = useState<Organization>();
   const [participantsData, setParticipantsData] = useState<Participant[]>([]);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [totalSelectedPerson, setTotalSelectedPerson] = useState(0);
-  // const [documentationFiles, setDocumentationFiles] = useState([]);
 
   const [loading, setLoading] = useState(true);
+  const [addParticipantDrawerState, setAddParticipantDrawerState] =
+    useState(false);
+
   const [addParticipantsDrawerState, setAddParticipantsDrawerState] =
     useState(false);
 
@@ -234,11 +244,11 @@ const DeatailedPage = () => {
   const [isLgbtq, setIsLgbtq] = useState(false);
 
   const showAddParticipantsDrawer = () => {
-    setAddParticipantsDrawerState(true);
+    setAddParticipantDrawerState(true);
   };
 
   const closeAddParticipantsDrawer = () => {
-    setAddParticipantsDrawerState(false);
+    setAddParticipantDrawerState(false);
   };
 
   const showParticipantsListDrawer = () => {
@@ -249,17 +259,13 @@ const DeatailedPage = () => {
     setParticipantsListDrawerState(false);
   };
 
-  const showDocumentationModal = () => {
-    setDocumentationModalState(true);
-  };
-
-  const closeDocumentationModal = () => {
-    setDocumentationModalState(false);
-  };
-
   useEffect(() => {
     const trainingDetailsRequest = fetch(
       `http://192.168.1.69:3000/api/training/${trainingId}`
+    ).then((res) => res.json());
+
+    const trainingCourseRequest = fetch(
+      "http://192.168.1.69:3000/api/training/courses"
     ).then((res) => res.json());
 
     const barangayRequest = fetch(
@@ -269,28 +275,27 @@ const DeatailedPage = () => {
     const personsRequest = fetch("http://192.168.1.69:3000/api/persons").then(
       (res) => res.json()
     );
-
-    const documentationRequest = fetch(
-      `http://192.168.1.69:3000/api/training/${trainingId}/documentations`
-    ).then((res) => res.json());
-
-    Promise.all([
-      trainingDetailsRequest,
-      barangayRequest,
-      personsRequest,
-      // documentationRequest,
-    ])
-      .then(([trainingData, barangayData, personData]) => {
-        setBarangay(barangayData);
-        setTrainingData(trainingData[0]);
-        setPersons(personData);
-        // setDocumentationFiles(documentationData);
-        // console.log(documentationData);
-      })
-      .catch((error) => {
-        console.error("Error fetching data:", error);
-      });
-  }, [loading]);
+    const interval = setInterval(() => {
+      Promise.all([
+        trainingDetailsRequest,
+        trainingCourseRequest,
+        barangayRequest,
+        personsRequest,
+      ])
+        .then(
+          ([trainingData, trainingCourseData, barangayData, personData]) => {
+            setBarangay(barangayData);
+            setTrainingCourses(trainingCourseData);
+            setTrainingData(trainingData[0]);
+            setPersons(personData);
+          }
+        )
+        .catch((error) => {
+          console.error("Error fetching data:", error);
+        });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -319,9 +324,9 @@ const DeatailedPage = () => {
   }, []);
 
   useEffect(() => {
-    if (trainingData?.fk_office_id) {
+    if (trainingData?.fk_trainee_id) {
       fetch(
-        `http://192.168.1.69:3000/api/agencies/${trainingData.fk_office_id}`,
+        `http://192.168.1.69:3000/api/agencies/${trainingData.fk_trainee_id}`,
         {
           method: "GET",
           headers: {
@@ -358,21 +363,33 @@ const DeatailedPage = () => {
     )
       .then((response) => {
         if (!response.ok) {
+          messageApi["error"]({
+            message: "Failed to add Participants",
+            placement: "bottomLeft",
+          });
           throw new Error("Failed to post participants data");
         }
         return response.json();
       })
       .then((data) => {
         console.log("Participants data posted successfully:", data);
-        // Optionally, you can update the component state or trigger other actions upon successful posting
+        messageApi["success"]({
+          message: "Participants added successfuly",
+          placement: "bottomLeft",
+        });
+        existingTrainingParticipants.resetFields();
+        setTrainingParticipantsList([]);
       })
       .catch((error) => {
         console.error("Error posting participants data:", error.message);
+        messageApi["error"]({
+          message: "Failed to add Participants",
+          placement: "bottomLeft",
+        });
       });
   };
 
   const postPerson = (data: {}) => {
-    setLoading(true);
     fetch(`http://192.168.1.69:3000/api/persons/create`, {
       method: "POST",
       headers: {
@@ -382,18 +399,31 @@ const DeatailedPage = () => {
     })
       .then((response) => {
         if (!response.ok) {
-          throw new Error("Failed to post participants data");
+          messageApi["error"]({
+            message: "Failed to add Person",
+            description: "Failed to Post Person data",
+            placement: "bottomLeft",
+          });
+          throw new Error("Failed to post Person data");
         }
         return response.json();
       })
       .then((data) => {
-        console.log("Participants data posted successfully:", data);
-        // Optionally, you can update the component state or trigger other actions upon successful posting
+        console.log("Person data posted successfully:", data);
+        messageApi["success"]({
+          message: "Person added successfuly",
+          description: `Person data posted successfully`,
+          placement: "bottomLeft",
+        });
+        participantsForm.resetFields();
       })
       .catch((error) => {
-        console.error("Error posting participants data:", error.message);
-      })
-      .then(() => setLoading(false));
+        messageApi["error"]({
+          message: "Failed to add Person",
+          description: `Error posting Person data: ${error.message}`,
+          placement: "bottomLeft",
+        });
+      });
   };
 
   // const postParticipantsData = async (participants: Participant[]) => {
@@ -427,11 +457,17 @@ const DeatailedPage = () => {
       skipEmptyLines: true,
       complete: (result) => {
         setParticipants((prevData) => [...prevData, ...result.data]);
-        message.success(`${file.name} file uploaded successfully`);
+        messageApi["success"]({
+          message: file.name + ` file uploaded successfully`,
+          placement: "bottomLeft",
+        });
       },
       error: (error) => {
         console.error("CSV parsing error:", error.message);
-        message.error(`${file.name} file upload failed.`);
+        messageApi["error"]({
+          message: file.name + ` file upload failed.`,
+          placement: "bottomLeft",
+        });
       },
     });
   };
@@ -492,6 +528,13 @@ const DeatailedPage = () => {
   //   },
   // };
 
+  const normFile = (e: any) => {
+    if (Array.isArray(e)) {
+      return e;
+    }
+    return e?.fileList;
+  };
+
   const handleChange = (value: []) => {
     setTotalSelectedPerson(value.length);
     setTrainingParticipantsList(value);
@@ -504,7 +547,7 @@ const DeatailedPage = () => {
       options.push({
         label:
           value.first_name + " " + value.middle_name + " " + value.last_name,
-        value: value.id,
+        value: value.person_id,
       });
     });
   }
@@ -515,10 +558,15 @@ const DeatailedPage = () => {
 
   return (
     <>
+      {contextHolder}
       <div className="m-5">
-        <Form form={trainingForm} layout="vertical">
-          <Title level={2}>
-            Training Details
+        <Form
+          form={trainingForm}
+          layout="vertical"
+          initialValues={trainingData}
+        >
+          <div>
+            <Title level={2}>Training Details</Title>
             {trainingData?.status === 1 ? (
               <Typography.Title level={4} type="warning">
                 Status: Active
@@ -532,76 +580,102 @@ const DeatailedPage = () => {
                 Status: Cancelled
               </Typography.Title>
             )}
-          </Title>
+          </div>
           <Row gutter={[16, 4]}>
             <Col span={1}>
-              <Form.Item name="id" label="ID">
-                <Input defaultValue={trainingData?.id} disabled />
+              <Form.Item
+                name="id"
+                label="ID"
+                initialValue={trainingData?.training_id}
+              >
+                <Input disabled />
               </Form.Item>
             </Col>
             <Col span={6}>
-              <Form.Item name="title" label="Title">
-                <Input defaultValue={trainingData?.title} />
+              <Form.Item name="course" label="Course">
+                <Select
+                  placeholder="Please select Course"
+                  optionFilterProp="label"
+                  style={{ width: "100%" }}
+                  showSearch
+                >
+                  {trainingCourses.map((item, index) => (
+                    <Option
+                      key={index}
+                      label={item.course}
+                      value={item.training_course_id}
+                    >
+                      {item.course}
+                    </Option>
+                  ))}
+                </Select>
               </Form.Item>
             </Col>
             <Col span={6}>
               <Form.Item name="venue" label="Venue">
-                <Input defaultValue={trainingData?.venue} />
+                <Input />
               </Form.Item>
             </Col>
             <Col span={6}>
               <Form.Item name="trainer" label="Trainer">
-                <Input defaultValue={trainingData?.trainer} />
+                <Input disabled />
               </Form.Item>
             </Col>
             <Col span={5}>
-              <Form.Item name="start_end_date" label="Start - End Date">
-                <RangePicker
-                  defaultValue={[
-                    dayjs(trainingData?.start_date),
-                    dayjs(trainingData?.end_date),
-                  ]}
-                  style={{ width: 250 }}
-                />
+              <Form.Item
+                name="start_end_date"
+                label="Start - End Date"
+                initialValue={[
+                  dayjs(trainingData?.start_date),
+                  dayjs(trainingData?.end_date),
+                ]}
+              >
+                <RangePicker style={{ width: 250 }} />
               </Form.Item>
             </Col>
           </Row>
           <Row gutter={16}>
             <Col span={1}>
               <Form.Item name="pax" label="Pax">
-                <Input defaultValue={trainingData?.pax} disabled />
+                <Input disabled />
               </Form.Item>
             </Col>
             <Col span={4}>
               <Form.Item name="contact_person" label="Contact Person">
-                <Input defaultValue={trainingData?.contact_person} />
+                <Input />
               </Form.Item>
             </Col>
             <Col span={4}>
-              <Form.Item name="contact_number" label="Contact Number">
-                <Input defaultValue={trainingData?.contact_person_number} />
+              <Form.Item name="contact_person_number" label="Contact Number">
+                <Input />
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item name="remarks" label="Remarks">
-                <TextArea
-                  defaultValue={trainingData?.remarks}
-                  rows={1}
-                  placeholder="Training Requirements"
-                />
+                <TextArea rows={1} placeholder="Training Requirements" />
               </Form.Item>
             </Col>
           </Row>
           <Row gutter={[16, 4]}>
             <Col span={"auto"}>
-              <Form.Item name="upload_aar" label="Upload After Activity Report">
+              <Form.Item
+                name="upload_aar"
+                label="Upload After Activity Report"
+                valuePropName="fileList"
+                getValueFromEvent={normFile}
+              >
                 <Upload {...AARprops} maxCount={1} accept=".pdf">
                   <Button icon={<UploadOutlined />}>Upload (Max: 1)</Button>
                 </Upload>
               </Form.Item>
             </Col>
             <Col span={"auto"}>
-              <Form.Item name="documentation" label="Documentation">
+              <Form.Item
+                name="documentation"
+                label="Documentation"
+                valuePropName="fileList"
+                getValueFromEvent={normFile}
+              >
                 <Upload
                   action={`http://192.168.1.69:3000/api/training/${trainingId}/upload/documentation`}
                   listType="picture"
@@ -615,41 +689,91 @@ const DeatailedPage = () => {
             <Col span={"auto"}>
               <Form.Item>
                 {trainingData?.after_activity_report ? (
-                  <Button>
-                    <a
-                      href={`../uploads/trainings/${new Date(
-                        trainingData.start_date
-                      ).getFullYear()}/${trainingId}/AAR.pdf`}
-                      target="_blank"
-                    >
-                      Open After Activity Report
-                    </a>
-                  </Button>
+                  // <Button>
+                  //   <a
+                  //     href={`../uploads/trainings/${new Date(
+                  //       trainingData.start_date
+                  //     ).getFullYear()}/${trainingId}/AAR.pdf`}
+                  //     target="_blank"
+                  //   >
+                  //     Open After Activity Report
+                  //   </a>
+                  // </Button>
+                  <ButtonOpenAAR
+                    trainingId={trainingId}
+                    trainingYear={new Date(
+                      trainingData.start_date
+                    ).getFullYear()}
+                  />
                 ) : (
                   <Button disabled title="Training data not available">
-                    Open After Activity Report
+                    After Activity Report
                   </Button>
                 )}
               </Form.Item>
             </Col>
             <Col span={"auto"}>
               <Form.Item>
-                {trainingData?.documentation == undefined ? (
-                  <Button
-                    disabled
-                    onClick={() => setDocumentationModalState(true)}
-                  >
-                    Open Documentation
-                  </Button>
+                {trainingData?.documentations ? (
+                  <ButtonOpenDocumentation
+                    trainingId={trainingId}
+                    trainingYear={new Date(
+                      trainingData.start_date
+                    ).getFullYear()}
+                    documentationNumber={1}
+                  />
                 ) : (
                   <Button disabled title="Training data not available">
-                    Open Documentation
+                    Documentation 1
                   </Button>
                 )}
               </Form.Item>
             </Col>
             <Col span={"auto"}>
-              <ButtonCancelTraining trainingId={`${trainingId}`} />
+              <Form.Item>
+                {trainingData?.documentations ? (
+                  <ButtonOpenDocumentation
+                    trainingId={trainingId}
+                    trainingYear={new Date(
+                      trainingData.start_date
+                    ).getFullYear()}
+                    documentationNumber={2}
+                  />
+                ) : (
+                  <Button disabled title="Training data not available">
+                    Documentation 2
+                  </Button>
+                )}
+              </Form.Item>
+            </Col>
+            <Col span={"auto"}>
+              <Form.Item>
+                {trainingData?.documentations ? (
+                  <ButtonOpenDocumentation
+                    trainingId={trainingId}
+                    trainingYear={new Date(
+                      trainingData.start_date
+                    ).getFullYear()}
+                    documentationNumber={3}
+                  />
+                ) : (
+                  <Button disabled title="Training data not available">
+                    Documentation 3
+                  </Button>
+                )}
+              </Form.Item>
+            </Col>
+            <Col span={"auto"} offset={5}>
+              <ButtonDeleteTraining
+                trainingId={trainingId}
+                trainingStatus={trainingData?.status}
+              />
+            </Col>
+            <Col span={"auto"} offset={0}>
+              <ButtonCancelTraining
+                trainingId={`${trainingId}`}
+                trainingStatus={trainingData?.status}
+              />
             </Col>
           </Row>
           <Row gutter={[16, 4]}>
@@ -726,6 +850,7 @@ const DeatailedPage = () => {
             <Space>
               <Button onClick={closeParticipantsListDrawer}>Cancel</Button>
               <Button
+                htmlType="reset"
                 onClick={() => {
                   postTrainingParticipants();
                 }}
@@ -735,31 +860,51 @@ const DeatailedPage = () => {
             </Space>
           }
         >
-          <Title level={5}>{totalSelectedPerson} Selected</Title>
-          <Select
-            optionFilterProp="label"
-            mode="multiple"
-            style={{ width: "100%" }}
-            placeholder="Select Participants"
-            onChange={handleChange}
-            optionLabelProp="label"
-            options={options}
-            optionRender={(option) => <Space>{option.data.label}</Space>}
-          />
-          <Button
-            className="mt-5"
-            onClick={() => {
-              showAddParticipantsDrawer();
-            }}
-          >
-            Register a Participant
-          </Button>
+          <Form layout="vertical" form={existingTrainingParticipants}>
+            <Title level={5}>{totalSelectedPerson} Selected</Title>
+            <Form.Item name="existing-participants">
+              <Select
+                optionFilterProp="label"
+                mode="multiple"
+                allowClear
+                style={{ width: "100%" }}
+                placeholder="Select Participants"
+                onChange={handleChange}
+                optionLabelProp="label"
+                options={options}
+              />
+            </Form.Item>
+            <Row>
+              <Col span={24}>
+                <Button
+                  className="mt-5"
+                  onClick={() => {
+                    showAddParticipantsDrawer();
+                  }}
+                >
+                  Register a Participant
+                </Button>
+              </Col>
+            </Row>
+            <Row gutter={12}>
+              <Col span={24}>
+                <Button
+                  className="mt-5"
+                  onClick={() => {
+                    setAddParticipantsDrawerState(true);
+                  }}
+                >
+                  Register Multiple Participants
+                </Button>
+              </Col>
+            </Row>
+          </Form>
           {/* Add Participants Drawer */}
           <Drawer
             title="Register Participants"
             width={"auto"}
             onClose={closeAddParticipantsDrawer}
-            open={addParticipantsDrawerState}
+            open={addParticipantDrawerState}
           >
             <Form
               layout="vertical"
@@ -786,9 +931,8 @@ const DeatailedPage = () => {
                   sitio: e.sitio,
                   barangay: e.barangay,
                 };
-                // console.log(user);
                 postPerson(user);
-                // participantsForm.resetFields();
+                setAddParticipantDrawerState(false);
               }}
             >
               <Divider orientation="left">
@@ -841,6 +985,11 @@ const DeatailedPage = () => {
                     <Input style={{ width: "100%" }} placeholder="John the D" />
                   </Form.Item>
                 </Col>
+              </Row>
+              <Row gutter={16}>
+                <Divider orientation="left">
+                  <Title level={4}>Personnal Information</Title>
+                </Divider>
                 <Col span={4}>
                   <Form.Item
                     name="occupation"
@@ -852,8 +1001,7 @@ const DeatailedPage = () => {
                     <Input />
                   </Form.Item>
                 </Col>
-              </Row>
-              <Row gutter={16}>
+
                 <Col span={4}>
                   <Form.Item
                     name="birth_date"
@@ -862,10 +1010,7 @@ const DeatailedPage = () => {
                       { required: true, message: "Please enter Birth Date" },
                     ]}
                   >
-                    <DatePicker
-                      defaultValue={dayjs("2024-01-30", "YYYY-MM-DD")}
-                      style={{ width: "100%" }}
-                    />
+                    <DatePicker style={{ width: "100%" }} />
                   </Form.Item>
                 </Col>
                 <Col span={4}>
@@ -877,41 +1022,6 @@ const DeatailedPage = () => {
                     ]}
                   >
                     <Input />
-                  </Form.Item>
-                </Col>
-                <Col span={4}>
-                  <Form.Item name="street" label="Street">
-                    <Input />
-                  </Form.Item>
-                </Col>
-                <Col span={4}>
-                  <Form.Item name="sitio" label="Sitio">
-                    <Input />
-                  </Form.Item>
-                </Col>
-                <Col span={4}>
-                  <Form.Item
-                    name="barangay"
-                    label="Barangay"
-                    rules={[
-                      { required: true, message: "Please select a Barangay" },
-                    ]}
-                  >
-                    <Select
-                      optionFilterProp="label"
-                      placeholder="Please select a Barangay"
-                      showSearch
-                    >
-                      {barangay.map((item, index) => (
-                        <Option
-                          key={index}
-                          label={item.barangay}
-                          value={item.id}
-                        >
-                          {item.barangay}
-                        </Option>
-                      ))}
-                    </Select>
                   </Form.Item>
                 </Col>
                 <Col span={4}>
@@ -935,6 +1045,40 @@ const DeatailedPage = () => {
                       <Option value="O+">O+</Option>
                       <Option value="O">O</Option>
                       <Option value="O-">O-</Option>
+                      <Option value="O-">Unknown</Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Row gutter={16}>
+                <Col span={4}>
+                  <Form.Item
+                    name="gender"
+                    label="Gender"
+                    rules={[
+                      { required: true, message: "Please choose a Gender" },
+                    ]}
+                  >
+                    <Select placeholder="Select a Gender">
+                      <Option value="Male">Male</Option>
+                      <Option value="Female">Female</Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+                <Col span={4}>
+                  <Form.Item
+                    name="civil_status"
+                    label="Civil Status"
+                    rules={[
+                      { required: true, message: "Please choose Civil Status" },
+                    ]}
+                  >
+                    <Select placeholder="Select Civil Status" showSearch>
+                      <Option value="Single">Single</Option>
+                      <Option value="Married">Married</Option>
+                      <Option value="Widowed">Widowed</Option>
+                      <Option value="Annuled">Annuled</Option>
                     </Select>
                   </Form.Item>
                 </Col>
@@ -971,36 +1115,6 @@ const DeatailedPage = () => {
 
                 <Col span={4}>
                   <Form.Item
-                    name="civil_status"
-                    label="Civil Status"
-                    rules={[
-                      { required: true, message: "Please choose Civil Status" },
-                    ]}
-                  >
-                    <Select placeholder="Select Civil Status" showSearch>
-                      <Option value="Single">Single</Option>
-                      <Option value="Married">Married</Option>
-                      <Option value="Widowed">Widowed</Option>
-                      <Option value="Annuled">Annuled</Option>
-                    </Select>
-                  </Form.Item>
-                </Col>
-                <Col span={4}>
-                  <Form.Item
-                    name="gender"
-                    label="Gender"
-                    rules={[
-                      { required: true, message: "Please choose a Gender" },
-                    ]}
-                  >
-                    <Select placeholder="Select a Gender">
-                      <Option value="Male">Male</Option>
-                      <Option value="Female">Female</Option>
-                    </Select>
-                  </Form.Item>
-                </Col>
-                <Col span={4}>
-                  <Form.Item
                     name="isLGBTQ"
                     label="LGBTQ+"
                     valuePropName="checked"
@@ -1021,7 +1135,7 @@ const DeatailedPage = () => {
                 <Col span={"auto"}>
                   <Form.Item>
                     <Button icon={<PlusOutlined />} htmlType="submit">
-                      Add Participant
+                      Submit
                     </Button>
                   </Form.Item>
                 </Col>
@@ -1039,60 +1153,75 @@ const DeatailedPage = () => {
                   </Form.Item>
                 </Col>
               </Row>
-              <Row>
-                <Divider orientation="left">
-                  <Title level={4}>Multiple Registration(Upload CSV)</Title>
-                </Divider>
-              </Row>
-              <Row gutter={16}>
-                <Col span={"auto"}>
-                  <Upload {...props} accept=".csv" maxCount={1}>
-                    <Button icon={<UploadOutlined />}>
-                      Mass Upload Participants (CSV File Only)
-                    </Button>
-                  </Upload>
-                </Col>
-                <Col span={"auto"}>
-                  <Form.Item>
-                    <Button
-                      icon={<PlusOutlined />}
-                      onClick={() => {
-                        participants.map((value) => {
-                          postPerson(value);
-                          setParticipants([]);
-                        });
-                      }}
-                    >
-                      Submit All
-                    </Button>
-                  </Form.Item>
-                </Col>
-                <Col span={"auto"}>
-                  <Button
-                    icon={<DeleteOutlined />}
-                    onClick={() => {
-                      setParticipants([]);
-                    }}
-                    danger
-                  >
-                    Clear Table
-                  </Button>
-                </Col>
-              </Row>
-              <Row gutter={16}>
-                <Col span={24}>
-                  <Table
-                    dataSource={participants}
-                    columns={ParticipantColumn}
-                  />
-                </Col>
-              </Row>
             </Form>
           </Drawer>
+          <Drawer
+            title="Add Multiple Participants"
+            width={"auto"}
+            onClose={() => setAddParticipantsDrawerState(false)}
+            open={addParticipantsDrawerState}
+          >
+            <Row>
+              <Divider orientation="left">
+                <Title level={4}>Multiple Registration(Upload CSV)</Title>
+              </Divider>
+            </Row>
+            <Row gutter={16}>
+              <Col span={"auto"}>
+                <Upload {...props} accept=".csv" maxCount={1}>
+                  <Button icon={<UploadOutlined />}>
+                    Mass Upload Participants (CSV File Only)
+                  </Button>
+                </Upload>
+              </Col>
+              <Col span={"auto"}>
+                <Form.Item>
+                  <Button
+                    icon={<PlusOutlined />}
+                    onClick={() => {
+                      participants.map((value) => {
+                        postPerson(value);
+                        setParticipants([]);
+                        setAddParticipantsDrawerState(false);
+                      });
+                    }}
+                  >
+                    Submit All
+                  </Button>
+                </Form.Item>
+              </Col>
+              <Col span={"auto"}>
+                <Button
+                  icon={<DeleteOutlined />}
+                  onClick={() => {
+                    setParticipants([]);
+                  }}
+                  danger
+                >
+                  Clear Table
+                </Button>
+              </Col>
+            </Row>
+            <Row gutter={16}>
+              <Col span={24}>
+                <Table
+                  dataSource={participants.map((item) => ({
+                    ...item,
+                    key: item.training_participant_id,
+                  }))}
+                  columns={ParticipantColumn}
+                />
+              </Col>
+            </Row>
+          </Drawer>
         </Drawer>
+
         <Divider orientation="left">Participants</Divider>
         <Table
-          dataSource={participantsData.flat()}
+          dataSource={participantsData.flat().map((item) => ({
+            ...item,
+            key: `${item.training_participant_id}`,
+          }))}
           columns={ParticipantColumn}
         />
       </div>
@@ -1103,22 +1232,17 @@ const DeatailedPage = () => {
         onCancel={() => setDocumentationModalState(false)}
         width={1000}
       >
-        {/* <Carousel effect="fade">
-          {documentationFiles && trainingData ? (
+        <Carousel effect="fade">
+          {/* {documentationFiles && trainingData ? (
             documentationFiles.map((file, index) => (
               <div key={index}>
-                <Image
-                  width={200}
-                  src={`../uploads/trainings/${new Date(
-                    trainingData.start_date
-                  ).getFullYear()}/${trainingId}/${file}`}
-                />
+                <Image width={200} src={file} />
               </div>
             ))
           ) : (
             <div>No documentation files available</div>
-          )}
-        </Carousel> */}
+          )} */}
+        </Carousel>
       </Modal>
     </>
   );
