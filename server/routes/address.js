@@ -4,10 +4,10 @@ async function routes(fastify, options) {
     fastify.addHook("onResponse", async (request, reply) => {
         fastify.log.info(`Responding: ${reply.elapsedTime}`);
     });
-    fastify.get("/barangay", {
+    fastify.get("/barangays", {
         handler: async (request, reply) => {
             const connection = await fastify.mysql.getConnection();
-            const [rows, fields] = await connection.query("SELECT * FROM barangay");
+            const [rows] = await connection.query("SELECT * FROM address_barangays");
             connection.release();
             return reply.code(200).send(rows);
         },

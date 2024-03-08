@@ -16,7 +16,7 @@ async function routes(
     }
   );
 
-  fastify.get("/barangay", {
+  fastify.get("/barangays", {
     handler: async (
       request: FastifyRequest<{
         Body: { trainingName: string };
@@ -25,7 +25,7 @@ async function routes(
     ) => {
       const connection = await fastify.mysql.getConnection();
 
-      const [rows, fields] = await connection.query("SELECT * FROM barangay");
+      const [rows] = await connection.query("SELECT * FROM address_barangays");
       connection.release();
 
       return reply.code(200).send(rows);

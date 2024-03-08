@@ -4,6 +4,7 @@ import {
   FastifyRequest,
   RouteShorthandOptions,
 } from "fastify";
+import { connect } from "http2";
 
 import { FieldPacket, ResultSetHeader } from "mysql2";
 
@@ -45,6 +46,7 @@ async function routes(
           nickname: string;
           gender: string;
           isLGBTQ: string;
+          isPWD: string;
           civil_status: string;
           birth_date: string;
           birth_place: string;
@@ -55,6 +57,8 @@ async function routes(
           sitio: string;
           contact_number: string;
           email_address: string;
+          isUnemployed: string;
+          office: number;
         };
       }>,
       reply: FastifyReply
@@ -62,63 +66,75 @@ async function routes(
       const participantsDetails = request.body;
       const connection = await fastify.mysql.getConnection();
 
-      try {
-        await connection.beginTransaction(); // Start a transaction
+      // Insert into persons table
+      const [personRows] = (await connection.query(
+        "INSERT INTO persons (first_name, middle_name, last_name, extension_name, nickname, occupation, birth_date, birth_place, blood_type, gender, civil_status, isLGBTQ, isPWD) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [
+          participantsDetails.first_name,
+          participantsDetails.middle_name || "",
+          participantsDetails.last_name,
+          participantsDetails.extension_name || "",
+          participantsDetails.nickname,
+          participantsDetails.occupation || "",
+          participantsDetails.birth_date,
+          participantsDetails.birth_place,
+          participantsDetails.blood_type,
+          participantsDetails.gender,
+          participantsDetails.civil_status,
+          participantsDetails.isLGBTQ,
+          participantsDetails.isPWD,
+        ]
+      )) as [ResultSetHeader, FieldPacket[]];
 
-        // Insert into persons table
-        const [personRows, personFields] = (await connection.query(
-          "INSERT INTO persons (first_name, middle_name, last_name, extension_name, nickname, occupation, birth_date, birth_place, blood_type, gender, civil_status, isLGBTQ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-          [
-            participantsDetails.first_name,
-            participantsDetails.middle_name || "",
-            participantsDetails.last_name,
-            participantsDetails.extension_name || "",
-            participantsDetails.nickname,
-            participantsDetails.occupation,
-            participantsDetails.birth_date,
-            participantsDetails.birth_place,
-            participantsDetails.blood_type,
-            participantsDetails.gender,
-            participantsDetails.civil_status,
-            participantsDetails.isLGBTQ,
-          ]
-        )) as [ResultSetHeader, FieldPacket[]];
+      // Retrieve the ID of the newly inserted person
+      const personId: number = personRows.insertId;
 
-        // Retrieve the ID of the newly inserted person
-        const personId: number = personRows.insertId;
+      // Insert into persons_address table
+      await connection.query(
+        "INSERT INTO persons_address (fk_person_id, fk_barangay_id, street, sitio) VALUES (?, ?, ?, ?)",
+        [
+          personId,
+          participantsDetails.barangay,
+          participantsDetails.street || "",
+          participantsDetails.sitio || "",
+        ]
+      );
 
-        // Insert into persons_address table
+      // Insert into phone_numbers table
+      const [phone_numberRows] = (await connection.query(
+        "INSERT INTO phone_numbers (contact_number) VALUES (?)",
+        [participantsDetails.contact_number]
+      )) as [ResultSetHeader, FieldPacket[]];
+
+      const phone_number_id = phone_numberRows.insertId;
+
+      await connection.query(
+        "INSERT INTO persons_phone_numbers (fk_person_id, fk_phone_number_id) VALUES (?, ?)",
+        [personId, phone_number_id]
+      );
+
+      // Insert into email_address table
+      const [email_addressRows] = (await connection.query(
+        "INSERT INTO email_addresses (email_address) VALUES (?)",
+        [participantsDetails.email_address]
+      )) as [ResultSetHeader, FieldPacket[]];
+
+      const email_address_id = email_addressRows.insertId;
+
+      await connection.query(
+        "INSERT INTO persons_email_addresses (fk_person_id, fk_email_address_id) VALUES (?, ?)",
+        [personId, email_address_id]
+      );
+
+      if (participantsDetails.isUnemployed === "false")
         await connection.query(
-          "INSERT INTO persons_address (fk_person_id, fk_barangay_id, street, sitio) VALUES (?, ?, ?, ?)",
-          [
-            personId,
-            participantsDetails.barangay,
-            participantsDetails.street || "",
-            participantsDetails.sitio || "",
-          ]
+          "INSERT INTO persons_offices (fk_person_id, fk_office_id) VALUES (?, ?)",
+          [personId, participantsDetails.office]
         );
 
-        // Insert into phone_numbers table
-        await connection.query(
-          "INSERT INTO phone_numbers (fk_person_id, contact_number) VALUES (?, ?)",
-          [personId, participantsDetails.contact_number]
-        );
+      connection.release();
 
-        // Insert into email_address table
-        await connection.query(
-          "INSERT INTO email_address (fk_person_id, email_address) VALUES (?, ?)",
-          [personId, participantsDetails.email_address]
-        );
-
-        await connection.commit(); // Commit the transaction
-
-        return reply.code(200).send({ message: "Person created successfully" });
-      } catch (error) {
-        await connection.rollback(); // Rollback the transaction if an error occurs
-        throw error;
-      } finally {
-        connection.release(); // Release the connection in any case
-      }
+      return reply.code(200).send({ message: "Person created successfully" });
     },
   });
 }

@@ -46,7 +46,7 @@ const { Title } = Typography;
 const DeatailedPage = () => {
   interface Barangay {
     key: React.Key;
-    id: number;
+    barangay_id: number;
     fk_city_id: number;
     barangay: string;
   }
@@ -111,15 +111,21 @@ const DeatailedPage = () => {
     abbreviation: string;
   }
 
-  interface Organization {
+  interface CompleteOrganization {
     office_id: number;
     fk_barangay_id: number;
     acronym: string;
     office_name: string;
-    office_contact_number: string;
-    office_email_address: string;
+    contact_number: string;
+    email_address: string;
     full_address: string;
     sitio: string;
+  }
+
+  interface Organization {
+    office_id: number;
+    acronym: string;
+    office_name: string;
   }
 
   const ParticipantColumn = [
@@ -223,11 +229,13 @@ const DeatailedPage = () => {
   const [persons, setPersons] = useState<Person[]>([]);
   const [trainingParticipantsList, setTrainingParticipantsList] = useState([]);
   const [trainingData, setTrainingData] = useState<Training>();
+  const [traineeData, setTraineeData] = useState<CompleteOrganization>();
+  const [organization, setOrganization] = useState<Organization[]>();
   const [trainingCourses, setTrainingCourses] = useState<Course[]>([]);
-  const [organizationData, setOrganizationData] = useState<Organization>();
   const [participantsData, setParticipantsData] = useState<Participant[]>([]);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [totalSelectedPerson, setTotalSelectedPerson] = useState(0);
+  const [isMixedTraining, setIsMixedTraining] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [addParticipantDrawerState, setAddParticipantDrawerState] =
@@ -242,6 +250,8 @@ const DeatailedPage = () => {
   const [documentationModalState, setDocumentationModalState] = useState(false);
 
   const [isLgbtq, setIsLgbtq] = useState(false);
+  const [isPWD, setIsPWD] = useState(false);
+  const [isUnemployed, setIsUnemployed] = useState(false);
 
   const showAddParticipantsDrawer = () => {
     setAddParticipantDrawerState(true);
@@ -269,7 +279,7 @@ const DeatailedPage = () => {
     ).then((res) => res.json());
 
     const barangayRequest = fetch(
-      "http://192.168.1.69:3000/api/address/barangay"
+      "http://192.168.1.69:3000/api/address/barangays"
     ).then((res) => res.json());
 
     const personsRequest = fetch("http://192.168.1.69:3000/api/persons").then(
@@ -298,6 +308,36 @@ const DeatailedPage = () => {
   }, []);
 
   useEffect(() => {
+    fetch(`http://192.168.1.69:3000/api/training/${trainingId}/trainee`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.length > 0) {
+          setTraineeData(data[0]);
+          console.log("specific");
+        } else {
+          setIsMixedTraining(true);
+          console.log("mixed");
+        }
+      });
+  }, []);
+
+  useEffect(() => {
+    fetch("http://192.168.1.69:3000/api/agencies/", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then((response) => response.json())
+      .then((data) => setOrganization(data));
+  }, []);
+
+  useEffect(() => {
     const interval = setInterval(() => {
       fetch(
         `http://192.168.1.69:3000/api/training/${trainingId}/participants`,
@@ -322,33 +362,6 @@ const DeatailedPage = () => {
     }, 1000);
     return () => clearInterval(interval);
   }, []);
-
-  useEffect(() => {
-    if (trainingData?.fk_trainee_id) {
-      fetch(
-        `http://192.168.1.69:3000/api/agencies/${trainingData.fk_trainee_id}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      )
-        .then((response) => response.json())
-        .then((data) => {
-          if (data.length > 0) {
-            // Check if data is available before updating the state
-            setOrganizationData(data[0]);
-          }
-
-          setLoading(false);
-        })
-        .catch((error) => {
-          console.error("Error fetching organization data:", error);
-          setLoading(false);
-        });
-    }
-  }, [trainingData]);
 
   const postTrainingParticipants = () => {
     fetch(
@@ -591,7 +604,7 @@ const DeatailedPage = () => {
                 <Input disabled />
               </Form.Item>
             </Col>
-            <Col span={6}>
+            <Col span={4}>
               <Form.Item name="course" label="Course">
                 <Select
                   placeholder="Please select Course"
@@ -611,7 +624,7 @@ const DeatailedPage = () => {
                 </Select>
               </Form.Item>
             </Col>
-            <Col span={6}>
+            <Col span={4}>
               <Form.Item name="venue" label="Venue">
                 <Input />
               </Form.Item>
@@ -621,7 +634,7 @@ const DeatailedPage = () => {
                 <Input disabled />
               </Form.Item>
             </Col>
-            <Col span={5}>
+            <Col span={"auto"}>
               <Form.Item
                 name="start_end_date"
                 label="Start - End Date"
@@ -633,13 +646,13 @@ const DeatailedPage = () => {
                 <RangePicker style={{ width: 250 }} />
               </Form.Item>
             </Col>
-          </Row>
-          <Row gutter={16}>
             <Col span={1}>
               <Form.Item name="pax" label="Pax">
                 <Input disabled />
               </Form.Item>
             </Col>
+          </Row>
+          <Row gutter={16}>
             <Col span={4}>
               <Form.Item name="contact_person" label="Contact Person">
                 <Input />
@@ -776,53 +789,69 @@ const DeatailedPage = () => {
               />
             </Col>
           </Row>
-          <Row gutter={[16, 4]}>
-            <Divider orientation="left">Organization Details</Divider>
-            <Col span={8}>
-              <Title level={5}>Organization Name</Title>
-              <Input defaultValue={organizationData?.office_name} disabled />
-            </Col>
-            <Col span={8}>
-              <Title level={5}>Organization Contact</Title>
-              <Input
-                defaultValue={organizationData?.office_contact_number}
-                addonBefore="+63"
-                placeholder="123456789"
-                disabled
-              />
-            </Col>
-            <Col span={8}>
-              <Title level={5}>Organization Email Address</Title>
-              <Input
-                defaultValue={organizationData?.office_email_address}
-                placeholder=""
-                disabled
-              />
-            </Col>
-          </Row>
-          <Row gutter={[16, 4]}>
-            <Col span={8}>
-              <Title level={5}>Full Address</Title>
-              <Input defaultValue={organizationData?.full_address} disabled />
-            </Col>
-            <Col span={8}>
-              <Title level={5}>Sitio</Title>
-              <Input defaultValue={organizationData?.sitio} disabled />
-            </Col>
-            <Col span={8}>
-              <Title level={5}>Organization Barangay</Title>
-              <Input
-                defaultValue={
-                  (
-                    barangay.find(
-                      (item) => item.id === organizationData?.fk_barangay_id
-                    ) || {}
-                  ).barangay
-                }
-                disabled
-              />
-            </Col>
-          </Row>
+          {!isMixedTraining ? (
+            <div>
+              <Row gutter={[16, 4]}>
+                <Divider orientation="left">Organization Details</Divider>
+                <Col span={8}>
+                  <Title level={5}>Organization Name</Title>
+                  <Input defaultValue={traineeData?.office_name} disabled />
+                </Col>
+                <Col span={8}>
+                  <Title level={5}>Organization Contact</Title>
+                  <Input
+                    defaultValue={traineeData?.contact_number}
+                    addonBefore="+63"
+                    placeholder="123456789"
+                    disabled
+                  />
+                </Col>
+                <Col span={8}>
+                  <Title level={5}>Organization Email Address</Title>
+                  <Input
+                    defaultValue={traineeData?.email_address}
+                    placeholder=""
+                    disabled
+                  />
+                </Col>
+              </Row>
+              <Row gutter={[16, 4]}>
+                <Col span={8}>
+                  <Title level={5}>Full Address</Title>
+                  <Input defaultValue={traineeData?.full_address} disabled />
+                </Col>
+                <Col span={8}>
+                  <Title level={5}>Sitio</Title>
+                  <Input defaultValue={traineeData?.sitio} disabled />
+                </Col>
+                <Col span={8}>
+                  <Title level={5}>Organization Barangay</Title>
+                  <Input
+                    defaultValue={
+                      (
+                        barangay.find(
+                          (item) =>
+                            item.barangay_id === traineeData?.fk_barangay_id
+                        ) || {}
+                      ).barangay
+                    }
+                    disabled
+                  />
+                </Col>
+              </Row>
+            </div>
+          ) : (
+            <div>
+              <Divider orientation="left">Mixed Training</Divider>
+              <Row>
+                <Col>
+                  <Typography.Title level={4}>
+                    Participants are coming from different offices/agencies
+                  </Typography.Title>
+                </Col>
+              </Row>
+            </div>
+          )}
         </Form>
         {/* <Row gutter={[16, 24]}>
         <Col span={2} offset={22}>
@@ -901,10 +930,29 @@ const DeatailedPage = () => {
           </Form>
           {/* Add Participants Drawer */}
           <Drawer
-            title="Register Participants"
+            title="Register Participant"
             width={"auto"}
             onClose={closeAddParticipantsDrawer}
             open={addParticipantDrawerState}
+            extra={
+              <Space>
+                <Button
+                  icon={<DeleteRowOutlined />}
+                  onClick={() => {
+                    participantsForm.resetFields();
+                  }}
+                  danger
+                >
+                  Reset Fields
+                </Button>
+                <Button
+                  icon={<PlusOutlined />}
+                  onClick={() => participantsForm.submit()}
+                >
+                  Submit
+                </Button>
+              </Space>
+            }
           >
             <Form
               layout="vertical"
@@ -927,7 +975,10 @@ const DeatailedPage = () => {
                   contact_number: e.contact_number,
                   email_address: e.email_address,
                   isLGBTQ: isLgbtq.toString() || "false",
-                  street: e.street,
+                  isPWD: isPWD.toString() || "false",
+                  isUnemployed: isUnemployed.toString() || "false",
+                  office: e.office,
+                  fullAddress: e.fullAdress,
                   sitio: e.sitio,
                   barangay: e.barangay,
                 };
@@ -936,10 +987,10 @@ const DeatailedPage = () => {
               }}
             >
               <Divider orientation="left">
-                <Title level={4}>Individual Registration</Title>
+                <Title level={4}>Personnal Information</Title>
               </Divider>
               <Row gutter={16}>
-                <Col span={4}>
+                <Col span={5}>
                   <Form.Item
                     name="first_name"
                     label="First Name"
@@ -950,7 +1001,7 @@ const DeatailedPage = () => {
                     <Input placeholder="John" />
                   </Form.Item>
                 </Col>
-                <Col span={4}>
+                <Col span={5}>
                   <Form.Item name="middle_name" label="Middle Name">
                     <Input style={{ width: "100%" }} placeholder="The" />
                   </Form.Item>
@@ -966,7 +1017,7 @@ const DeatailedPage = () => {
                     <Input style={{ width: "100%" }} placeholder="Doe" />
                   </Form.Item>
                 </Col>
-                <Col span={4}>
+                <Col span={5}>
                   <Form.Item name="extension_name" label="Extension Name">
                     <Input
                       style={{ width: "100%" }}
@@ -974,7 +1025,7 @@ const DeatailedPage = () => {
                     />
                   </Form.Item>
                 </Col>
-                <Col span={4}>
+                <Col span={5}>
                   <Form.Item
                     name="nickname"
                     label="Nickname"
@@ -987,21 +1038,6 @@ const DeatailedPage = () => {
                 </Col>
               </Row>
               <Row gutter={16}>
-                <Divider orientation="left">
-                  <Title level={4}>Personnal Information</Title>
-                </Divider>
-                <Col span={4}>
-                  <Form.Item
-                    name="occupation"
-                    label="Occupation"
-                    rules={[
-                      { required: true, message: "Please enter Occupation" },
-                    ]}
-                  >
-                    <Input />
-                  </Form.Item>
-                </Col>
-
                 <Col span={4}>
                   <Form.Item
                     name="birth_date"
@@ -1013,7 +1049,7 @@ const DeatailedPage = () => {
                     <DatePicker style={{ width: "100%" }} />
                   </Form.Item>
                 </Col>
-                <Col span={4}>
+                <Col span={8}>
                   <Form.Item
                     name="birth_place"
                     label="Birth Place"
@@ -1049,9 +1085,7 @@ const DeatailedPage = () => {
                     </Select>
                   </Form.Item>
                 </Col>
-              </Row>
 
-              <Row gutter={16}>
                 <Col span={4}>
                   <Form.Item
                     name="gender"
@@ -1084,36 +1118,7 @@ const DeatailedPage = () => {
                 </Col>
               </Row>
               <Row gutter={16}>
-                <Col span={4}>
-                  <Form.Item
-                    name="contact_number"
-                    label="Contact Number"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Please enter Contact Number",
-                      },
-                    ]}
-                  >
-                    <Input addonBefore="+63" />
-                  </Form.Item>
-                </Col>
-                <Col span={4}>
-                  <Form.Item
-                    name="email_address"
-                    label="Email Address"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Please enter E-mail Address",
-                      },
-                    ]}
-                  >
-                    <Input />
-                  </Form.Item>
-                </Col>
-
-                <Col span={4}>
+                <Col span={"auto"}>
                   <Form.Item
                     name="isLGBTQ"
                     label="LGBTQ+"
@@ -1130,26 +1135,162 @@ const DeatailedPage = () => {
                     </Checkbox>
                   </Form.Item>
                 </Col>
-              </Row>
-              <Row gutter={16}>
                 <Col span={"auto"}>
-                  <Form.Item>
-                    <Button icon={<PlusOutlined />} htmlType="submit">
-                      Submit
-                    </Button>
+                  <Form.Item name="isPWD" label="PWD" valuePropName="checked">
+                    <Checkbox
+                      checked={isPWD}
+                      defaultChecked={false}
+                      onClick={() => {
+                        setIsPWD(!isPWD);
+                      }}
+                    >
+                      is PWD
+                    </Checkbox>
                   </Form.Item>
                 </Col>
-                <Col span={"Auto"}>
-                  <Form.Item>
-                    <Button
-                      icon={<DeleteRowOutlined />}
-                      onClick={() => {
-                        participantsForm.resetFields();
-                      }}
-                      danger
+              </Row>
+              <Divider orientation="left">
+                <Title level={4}>Address</Title>
+              </Divider>
+              <Row gutter={16}>
+                <Col span={"auto"}>
+                  <Form.Item name="fullAddress" label="Full Address">
+                    <Input />
+                  </Form.Item>
+                </Col>
+                <Col span={"auto"}>
+                  <Form.Item name="sitio" label="Sitio">
+                    <Input />
+                  </Form.Item>
+                </Col>
+                <Col span={"auto"}>
+                  <Form.Item name="barangay" label="Barangay">
+                    <Select
+                      placeholder="Select a Barangay"
+                      optionFilterProp="label"
+                      showSearch
                     >
-                      Reset Fields
-                    </Button>
+                      {barangay.map((item, index) => (
+                        <Option
+                          key={index}
+                          label={item.barangay}
+                          value={item.barangay_id}
+                        >
+                          {item.barangay}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Divider orientation="left">
+                <Title level={4}>Career Information</Title>
+              </Divider>
+              <Row gutter={16}>
+                <Col span={24}>
+                  <Form.Item
+                    name="isUnemployed"
+                    label="Unemployed"
+                    valuePropName="checked"
+                  >
+                    <Checkbox
+                      checked={true}
+                      defaultChecked={false}
+                      onClick={() => {
+                        setIsUnemployed(!isUnemployed);
+                      }}
+                    >
+                      Unemployed
+                    </Checkbox>
+                  </Form.Item>
+                </Col>
+              </Row>
+              {!isUnemployed ? (
+                <Row gutter={16}>
+                  <Col span={12}>
+                    <Form.Item
+                      name="office"
+                      label="Office/Agency"
+                      rules={
+                        isUnemployed
+                          ? []
+                          : [
+                              {
+                                required: true,
+                                message: "Please select an Office/Agency",
+                              },
+                            ]
+                      }
+                    >
+                      <Select
+                        placeholder="Please select Office"
+                        optionFilterProp="label"
+                        showSearch
+                      >
+                        {organization?.map((item, index) => (
+                          <Option
+                            key={index}
+                            label={item.office_name}
+                            value={item.office_id}
+                          >
+                            {item.office_name}
+                          </Option>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item
+                      name="occupation"
+                      label="Occupation"
+                      rules={
+                        isUnemployed
+                          ? []
+                          : [
+                              {
+                                required: true,
+                                message: "Please enter Occupation",
+                              },
+                            ]
+                      }
+                    >
+                      <Input />
+                    </Form.Item>
+                  </Col>
+                </Row>
+              ) : (
+                <></>
+              )}
+              <Divider orientation="left">
+                <Title level={4}>Contact Information</Title>
+              </Divider>
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    name="contact_number"
+                    label="Contact Number"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please enter Contact Number",
+                      },
+                    ]}
+                  >
+                    <Input addonBefore="+63" />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    name="email_address"
+                    label="Email Address"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please enter E-mail Address",
+                      },
+                    ]}
+                  >
+                    <Input />
                   </Form.Item>
                 </Col>
               </Row>

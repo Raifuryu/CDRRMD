@@ -21,7 +21,7 @@ async function routes(
       const connection = await fastify.mysql.getConnection();
 
       const [rows, fields] = await connection.query(
-        "SELECT * FROM persons INNER JOIN phone_numbers ON phone_numbers.fk_person_id = persons.id INNER JOIN persons_offices ON persons_offices.fk_person_id = persons.id INNER JOIN offices ON offices.id = persons_offices.fk_office_id;"
+        "SELECT * FROM persons INNER JOIN phone_numbers ON phone_numbers.fk_person_id = persons.person_id INNER JOIN persons_offices ON persons_offices.fk_person_id = persons.person_id INNER JOIN offices ON offices.office_id = persons_offices.fk_office_id;"
       );
       connection.release();
 
