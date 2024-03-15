@@ -59,6 +59,7 @@ const ButtonCancelTraining: React.FC<props> = ({
         if (!response.ok) {
           messageApi["error"]({
             message: "Failed to Update Data",
+            placement: "bottomLeft",
           });
           throw new Error("Failed to post participants data");
         }
@@ -68,6 +69,7 @@ const ButtonCancelTraining: React.FC<props> = ({
         console.log("Participants data posted successfully:", data);
         messageApi["success"]({
           message: "Data Updated",
+          placement: "bottomLeft",
         });
         // Optionally, you can update the component state or trigger other actions upon successful posting
       })
@@ -75,6 +77,7 @@ const ButtonCancelTraining: React.FC<props> = ({
         console.error("Error posting participants data:", error.message);
         messageApi["error"]({
           message: "Failed to Update Data",
+          placement: "bottomLeft",
         });
       });
   };

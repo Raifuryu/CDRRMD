@@ -22,7 +22,11 @@ import DrawerAddOrganization from "./DrawerAddOrganization";
 const { RangePicker } = DatePicker;
 const { Option } = Select;
 
-const FloatButtonDrawer = () => {
+interface props {
+  updateState: () => void;
+}
+
+const FloatButtonDrawer: React.FC<props> = ({ updateState }) => {
   interface Course {
     key: React.Key;
     training_course_id: number;
@@ -44,6 +48,7 @@ const FloatButtonDrawer = () => {
   // Libraries
   const [messageApi, contextHolder] = notification.useNotification();
   const [trainingForm] = Form.useForm();
+  const [count, setCount] = useState(1);
 
   // Drawers
   const [trainingDrawer, setTrainingDrawer] = useState(false);
@@ -67,25 +72,34 @@ const FloatButtonDrawer = () => {
       setTrainingCourses(courses);
       setOrganizationData(offices);
     });
-  }, []);
+  }, [count]);
 
   const postTraining = async (values: any) => {
-    checkboxState
-      ? await fetch("http://192.168.1.69:3000/api/training/create/mixed", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(values),
-        })
-      : await fetch("http://192.168.1.69:3000/api/training/create", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(values),
+    await fetch(
+      checkboxState
+        ? "http://192.168.1.69:3000/api/training/create/mixed"
+        : "http://192.168.1.69:3000/api/training/create",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(values),
+      }
+    )
+      .catch((error) => {
+        messageApi["error"]({
+          message: "Failed to create Training",
+          description: "Error adding data:" + error,
         });
-
+      })
+      .finally(() => {
+        messageApi["success"]({
+          message: "Training Created",
+          placement: "bottomLeft",
+        });
+        setCount(count + 1);
+      });
     // try {
     //   console.log(values);
     //   await fetch("http://192.168.1.69:3000/api/training/create", {
@@ -106,6 +120,11 @@ const FloatButtonDrawer = () => {
     //     description: "Error adding data:" + error,
     //   });
     // }
+  };
+
+  const updateCount = () => {
+    setCount(count + 1);
+    console.log(count);
   };
 
   return (
@@ -174,6 +193,7 @@ const FloatButtonDrawer = () => {
             postTraining(dataArray);
             setCheckboxState(false);
             setTrainingDrawer(false);
+            updateState();
             trainingForm.resetFields();
           }}
         >
@@ -340,7 +360,7 @@ const FloatButtonDrawer = () => {
             <></>
           )}
         </Form>
-        <DrawerAddOrganization />
+        <DrawerAddOrganization updateCount={updateCount} />
       </Drawer>
     </>
   );

@@ -27,7 +27,7 @@ async function routes(
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       const connection = await fastify.mysql.getConnection();
       const [rows] = await connection.query(
-        "SELECT trainings.*, (SELECT COUNT(*) FROM trainings_participants WHERE trainings_participants.fk_training_id = trainings.training_id) AS pax, trainings_courses.*, offices.office_name AS trainer FROM trainings LEFT JOIN trainings_courses ON trainings.fk_course_id = trainings_courses.training_course_id LEFT JOIN offices ON trainings.fk_trainer_id = offices.office_id WHERE trainings.status != 4 ORDER BY trainings.start_date DESC;"
+        "SELECT trainings.*, ( SELECT COUNT(*) FROM trainings_participants WHERE trainings_participants.fk_training_id = trainings.training_id ) AS pax, trainings_courses.*, offices.office_name AS trainee FROM trainings LEFT JOIN trainings_courses ON trainings.fk_course_id = trainings_courses.training_course_id LEFT JOIN trainings_trainees ON trainings.training_id = trainings_trainees.fk_training_id LEFT JOIN offices ON trainings_trainees.fk_trainee_id = offices.office_id WHERE trainings.status != 4 ORDER BY trainings.start_date DESC"
       );
       connection.release();
 
@@ -120,7 +120,7 @@ async function routes(
 
       const connection = await fastify.mysql.getConnection();
       const [rows] = await connection.query(
-        "SELECT * FROM trainings_participants LEFT JOIN persons ON trainings_participants.fk_participant_id = persons.person_id LEFT JOIN persons_address ON persons_address.fk_person_id = persons.person_id LEFT JOIN address_barangays ON persons_address.fk_barangay_id = address_barangays.barangay_id LEFT JOIN persons_phone_numbers ON persons.person_id = persons_phone_numbers.person_contact_number_id LEFT JOIN phone_numbers ON phone_numbers.phone_number_id = persons_phone_numbers.fk_phone_number_id LEFT JOIN persons_email_addresses ON persons.person_id = persons_email_addresses.fk_person_id LEFT JOIN email_addresses ON email_addresses.email_address_id = persons_email_addresses.fk_email_address_id WHERE trainings_participants.fk_training_id = ?",
+        "SELECT * FROM trainings_participants LEFT JOIN persons ON persons.person_id = trainings_participants.fk_participant_id LEFT JOIN persons_address ON persons_address.fk_person_id = persons.person_id LEFT JOIN address_barangays ON address_barangays.barangay_id = persons_address.fk_barangay_id LEFT JOIN persons_phone_numbers ON persons_phone_numbers.fk_person_id = persons.person_id LEFT JOIN phone_numbers ON phone_numbers.phone_number_id = persons_phone_numbers.fk_phone_number_id LEFT JOIN persons_email_addresses ON persons_email_addresses.fk_person_id LEFT JOIN email_addresses ON email_addresses.email_address_id = persons_email_addresses.fk_email_address_id WHERE trainings_participants.fk_training_id = ?",
         [id]
       );
 
@@ -429,7 +429,7 @@ async function routes(
       const remarks = request.body.remarks;
       const connection = await fastify.mysql.getConnection();
       await connection.query(
-        "UPDATE trainings SET status = ?, remarks = ? WHERE id = ?;",
+        "UPDATE trainings SET status = ?, remarks = ? WHERE training_id = ?;",
         [2, remarks || "", id]
       );
       connection.release();

@@ -5,6 +5,8 @@ import {
   Drawer,
   Form,
   Input,
+  Radio,
+  RadioChangeEvent,
   Row,
   Select,
   Space,
@@ -14,7 +16,11 @@ const { Option } = Select;
 
 import { useEffect, useState } from "react";
 
-const DrawerAddOrganization = () => {
+interface props {
+  updateCount: () => void;
+}
+
+const DrawerAddOrganization: React.FC<props> = ({ updateCount }) => {
   interface Barangay {
     key: React.Key;
     barangay_id: number;
@@ -25,6 +31,12 @@ const DrawerAddOrganization = () => {
   const [messageApi, contextHolder] = notification.useNotification();
   const [organizationForm] = Form.useForm();
   const [organizationDrawer, setOrganizationDrawer] = useState(false);
+  const [organizationType, setOrganizationType] = useState(1);
+  const organizationTypeOptions = [
+    { label: "Government", value: 1 },
+    { label: "Semi-Government", value: 3 },
+    { label: "Civil Society Organization", value: 2 },
+  ];
 
   const [barangay, setBarangay] = useState<Barangay[]>([]);
 
@@ -49,6 +61,7 @@ const DrawerAddOrganization = () => {
         message: "Organization Added Successfully",
         placement: "bottomLeft",
       });
+      updateCount();
     } catch (error) {
       console.error("Error adding data:" + error);
       messageApi["error"]({
@@ -106,6 +119,7 @@ const DrawerAddOrganization = () => {
 
             const dataArray = {
               organization_name: formData.organization_name,
+              organization_type: formData.organization_type,
               acronym: formData.acronym,
               contact_number: formData.contact_number,
               email_address: formData.email_address,
@@ -140,6 +154,26 @@ const DrawerAddOrganization = () => {
                 <Input />
               </Form.Item>
             </Col>
+          </Row>
+          <Row>
+            <Form.Item
+              name="organization_type"
+              label="Organization Type"
+              rules={[
+                {
+                  required: true,
+                  message: "Please Select Organization Type",
+                },
+              ]}
+            >
+              <Radio.Group
+                options={organizationTypeOptions}
+                onChange={({ target: { value } }: RadioChangeEvent) => {
+                  setOrganizationType(value);
+                }}
+                value={organizationType}
+              />
+            </Form.Item>
           </Row>
           <Row gutter={16}>
             <Col span={12}>

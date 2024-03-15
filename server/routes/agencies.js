@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-async function routes(fastify, options) {
+async function routes(fastify) {
     fastify.addHook("onResponse", async (request, reply) => {
         fastify.log.info(`Responding: ${reply.elapsedTime}`);
     });
@@ -29,7 +29,7 @@ async function routes(fastify, options) {
             const type = request.params.type;
             const connection = await fastify.mysql.getConnection();
             console.log(type);
-            const [rows] = await connection.query("SELECT * FROM offices_categories INNER JOIN categories ON offices_categories.fk_category_id = categories.category_id INNER JOIN offices ON offices_categories.fk_office_id = offices.office_id WHERE category_id = 1", [type]);
+            const [rows] = await connection.query("SELECT * FROM offices_categories INNER JOIN categories ON offices_categories.fk_category_id = categories.category_id INNER JOIN offices ON offices_categories.fk_office_id = offices.office_id WHERE category_id = ?", [type]);
             connection.release();
             return reply.code(200).send(rows);
         },
@@ -39,16 +39,19 @@ async function routes(fastify, options) {
             const organization = request.body;
             const connection = await fastify.mysql.getConnection();
             const [row] = (await connection.query("SELECT * FROM offices WHERE office_name = ? OR acronym = ?", [organization.organization_name, organization.acronym]));
-            if (row[0].isEmpty()) {
-                await connection.query("INSERT INTO offices (office_name, acronym, office_contact_number, office_email_address, full_address, sitio, fk_barangay_id ) VALUES (?, ?, ?, ?, ?, ?, ?)", [
-                    organization.organization_name,
-                    organization.acronym || "",
-                    organization.contact_number,
-                    organization.email_address,
+            if (row.length === 0) {
+                const [result] = (await connection.query("INSERT INTO offices (office_name, acronym) VALUES (?, ?)", [organization.organization_name, organization.acronym || ""]));
+                await connection.query("INSERT INTO offices_addresses (fk_office_id, full_address, sitio, fk_barangay_id) VALUES(?, ?, ?, ?)", [
+                    result.insertId,
                     organization.full_address || "",
                     organization.sitio || "",
                     organization.barangay,
                 ]);
+                await connection.query("INSERT INTO offices_categories (fk_office_id, fk_category_id) VALUES(?, ?)", [result.insertId, organization.organization_type]);
+                const [email_id] = (await connection.query("INSERT INTO email_addresses (email_address	) VALUES(?)", [organization.email_address]));
+                await connection.query("INSERT INTO offices_email_addresses (fk_office_id, fk_email_address_id	) VALUES(?, ?)", [result.insertId, email_id.insertId]);
+                const [phone_number_id] = (await connection.query("INSERT INTO phone_numbers (contact_number) VALUES(?)", [organization.contact_number]));
+                await connection.query("INSERT INTO offices_phone_numbers (fk_office_id, fk_phone_number_id	) VALUES(?, ?)", [result.insertId, phone_number_id.insertId]);
                 connection.release();
                 reply.code(201).send("Success");
             }

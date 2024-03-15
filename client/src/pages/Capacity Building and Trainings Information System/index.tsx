@@ -16,6 +16,7 @@ const { Title } = Typography;
 const CBTISLayout = () => {
   const [messageApi, contextHolder] = notification.useNotification();
 
+  const [countState, setCountState] = useState(1);
   const [loading, setLoading] = useState(false);
 
   const [trainingData, setTrainingData] = useState<Training[]>([]);
@@ -62,9 +63,12 @@ const CBTISLayout = () => {
       },
     },
     {
-      title: "Trainer",
-      dataIndex: "trainer",
-      key: "trainer",
+      title: "Trainee",
+      dataIndex: "trainee",
+      key: "trainee",
+      render: (value: string) => (
+        <Typography.Text>{value === null ? "Mixed" : value}</Typography.Text>
+      ),
     },
     {
       title: "Contact Person",
@@ -161,8 +165,15 @@ const CBTISLayout = () => {
           description: "Error details " + error,
           placement: "bottomLeft",
         });
+      })
+      .finally(() => {
+        setLoading(false);
       });
-  }, []);
+  }, [countState]);
+
+  const updateState = () => {
+    setCountState(countState + 1);
+  };
 
   const onChange: TableProps<Training>["onChange"] = (
     pagination,
@@ -194,7 +205,7 @@ const CBTISLayout = () => {
             onChange={onChange}
           />
         </div>
-        <FloatButtonDrawer />
+        <FloatButtonDrawer updateState={updateState} />
       </div>
     </>
   );

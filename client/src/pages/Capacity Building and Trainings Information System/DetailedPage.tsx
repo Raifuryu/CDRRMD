@@ -23,7 +23,6 @@ import {
   Typography,
   Upload,
   UploadProps,
-  message,
   notification,
 } from "antd";
 import TextArea from "antd/es/input/TextArea";
@@ -38,6 +37,7 @@ import ButtonCancelTraining from "./ButtonCancelTraining";
 import ButtonOpenAAR from "./ButtonOpenAAR";
 import ButtonOpenDocumentation from "./ButtonOpenDocumentation";
 import ButtonDeleteTraining from "./ButtonDeleteTraining";
+import DrawerAddOrganization from "./DrawerAddOrganization";
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
@@ -202,6 +202,11 @@ const DeatailedPage = () => {
       key: "isLGBTQ",
     },
     {
+      title: "PWD",
+      dataIndex: "isPWD",
+      key: "isPWD",
+    },
+    {
       title: "Street",
       dataIndex: "street",
       key: "street",
@@ -236,6 +241,9 @@ const DeatailedPage = () => {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [totalSelectedPerson, setTotalSelectedPerson] = useState(0);
   const [isMixedTraining, setIsMixedTraining] = useState(false);
+
+  // dummy state
+  const [count, setCount] = useState(1);
 
   const [loading, setLoading] = useState(true);
   const [addParticipantDrawerState, setAddParticipantDrawerState] =
@@ -305,7 +313,7 @@ const DeatailedPage = () => {
         });
     }, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [count]);
 
   useEffect(() => {
     fetch(`http://192.168.1.69:3000/api/training/${trainingId}/trainee`, {
@@ -318,13 +326,11 @@ const DeatailedPage = () => {
       .then((data) => {
         if (data.length > 0) {
           setTraineeData(data[0]);
-          console.log("specific");
         } else {
           setIsMixedTraining(true);
-          console.log("mixed");
         }
       });
-  }, []);
+  }, [count]);
 
   useEffect(() => {
     fetch("http://192.168.1.69:3000/api/agencies/", {
@@ -335,7 +341,7 @@ const DeatailedPage = () => {
     })
       .then((response) => response.json())
       .then((data) => setOrganization(data));
-  }, []);
+  }, [count]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -361,7 +367,7 @@ const DeatailedPage = () => {
         });
     }, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [count]);
 
   const postTrainingParticipants = () => {
     fetch(
@@ -399,6 +405,9 @@ const DeatailedPage = () => {
           message: "Failed to add Participants",
           placement: "bottomLeft",
         });
+      })
+      .finally(() => {
+        setCount(count + 1);
       });
   };
 
@@ -436,6 +445,9 @@ const DeatailedPage = () => {
           description: `Error posting Person data: ${error.message}`,
           placement: "bottomLeft",
         });
+      })
+      .finally(() => {
+        setCount(count + 1);
       });
   };
 
@@ -495,7 +507,7 @@ const DeatailedPage = () => {
       const isCSV = file.type === "text/csv";
       if (!isCSV) {
         console.log(file.type);
-        message.error(`${file.name} is not a CSV file`);
+        // message.error(`${file.name} is not a CSV file`);
       } else {
         handleFileUpload(file);
       }
@@ -515,9 +527,15 @@ const DeatailedPage = () => {
         console.log(info.file, info.fileList);
       }
       if (info.file.status === "done") {
-        message.success(`${info.file.name} file uploaded successfully`);
+        messageApi["success"]({
+          message: "success",
+          description: `${info.file.name} file uploaded successfully`,
+        });
       } else if (info.file.status === "error") {
-        message.error(`${info.file.name} file upload failed.`);
+        messageApi["error"]({
+          message: "Error",
+          description: `${info.file.name} file upload failed.`,
+        });
       }
     },
   };
@@ -540,6 +558,10 @@ const DeatailedPage = () => {
   //     }
   //   },
   // };
+
+  const updateCount = () => {
+    setCount(count + 1);
+  };
 
   const normFile = (e: any) => {
     if (Array.isArray(e)) {
@@ -922,6 +944,7 @@ const DeatailedPage = () => {
                   onClick={() => {
                     setAddParticipantsDrawerState(true);
                   }}
+                  disabled
                 >
                   Register Multiple Participants
                 </Button>
@@ -1184,6 +1207,39 @@ const DeatailedPage = () => {
                 </Col>
               </Row>
               <Divider orientation="left">
+                <Title level={4}>Contact Information</Title>
+              </Divider>
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    name="contact_number"
+                    label="Contact Number"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please enter Contact Number",
+                      },
+                    ]}
+                  >
+                    <Input addonBefore="+63" />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    name="email_address"
+                    label="Email Address"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please enter E-mail Address",
+                      },
+                    ]}
+                  >
+                    <Input />
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Divider orientation="left">
                 <Title level={4}>Career Information</Title>
               </Divider>
               <Row gutter={16}>
@@ -1257,43 +1313,11 @@ const DeatailedPage = () => {
                       <Input />
                     </Form.Item>
                   </Col>
+                  <DrawerAddOrganization updateCount={updateCount} />
                 </Row>
               ) : (
                 <></>
               )}
-              <Divider orientation="left">
-                <Title level={4}>Contact Information</Title>
-              </Divider>
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item
-                    name="contact_number"
-                    label="Contact Number"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Please enter Contact Number",
-                      },
-                    ]}
-                  >
-                    <Input addonBefore="+63" />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item
-                    name="email_address"
-                    label="Email Address"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Please enter E-mail Address",
-                      },
-                    ]}
-                  >
-                    <Input />
-                  </Form.Item>
-                </Col>
-              </Row>
             </Form>
           </Drawer>
           <Drawer
