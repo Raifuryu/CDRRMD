@@ -210,7 +210,7 @@ const DrawerAddOrganization: React.FC<props> = ({ updateCount }) => {
             <Col span={24}>
               <Form.Item
                 name="full_address"
-                label="Full Address(Street #, House/Building #, Sitio, Barangay)"
+                label="House/Apt/Bldg. No/St. Name"
               >
                 <Input placeholder="Enter Home Address" />
               </Form.Item>

@@ -38,6 +38,7 @@ import ButtonOpenAAR from "./ButtonOpenAAR";
 import ButtonOpenDocumentation from "./ButtonOpenDocumentation";
 import ButtonDeleteTraining from "./ButtonDeleteTraining";
 import DrawerAddOrganization from "./DrawerAddOrganization";
+import ButtonDownloadCertificateCSV from "./ButtonDownloadCertificateCSV";
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
@@ -66,7 +67,7 @@ const DeatailedPage = () => {
     occupation: string;
     blood_type: string;
     barangay: string;
-    street: string;
+    full_address: string;
     sitio: string;
     contact_number: string;
     email_address: string;
@@ -207,9 +208,9 @@ const DeatailedPage = () => {
       key: "isPWD",
     },
     {
-      title: "Street",
-      dataIndex: "street",
-      key: "street",
+      title: "Full Address",
+      dataIndex: "full_address",
+      key: "full_address",
     },
     {
       title: "Sitio",
@@ -220,6 +221,11 @@ const DeatailedPage = () => {
       title: "Barangay",
       dataIndex: "barangay",
       key: "barangay",
+    },
+    {
+      title: "Code",
+      dataIndex: "certificate_code",
+      key: "certificate_code",
     },
   ];
   const [messageApi, contextHolder] = notification.useNotification();
@@ -293,26 +299,32 @@ const DeatailedPage = () => {
     const personsRequest = fetch("http://192.168.1.69:3000/api/persons").then(
       (res) => res.json()
     );
-    const interval = setInterval(() => {
-      Promise.all([
-        trainingDetailsRequest,
-        trainingCourseRequest,
-        barangayRequest,
-        personsRequest,
-      ])
-        .then(
-          ([trainingData, trainingCourseData, barangayData, personData]) => {
-            setBarangay(barangayData);
-            setTrainingCourses(trainingCourseData);
-            setTrainingData(trainingData[0]);
-            setPersons(personData);
-          }
-        )
-        .catch((error) => {
-          console.error("Error fetching data:", error);
+
+    Promise.all([
+      trainingDetailsRequest,
+      trainingCourseRequest,
+      barangayRequest,
+      personsRequest,
+    ])
+      .then(([trainingData, trainingCourseData, barangayData, personData]) => {
+        setBarangay(barangayData);
+        setTrainingCourses(trainingCourseData);
+        setTrainingData(trainingData[0]);
+        setPersons(personData);
+        messageApi["success"]({
+          message: "Success",
+          description: "Data Fetched Successfully",
+          placement: "bottomLeft",
         });
-    }, 1000);
-    return () => clearInterval(interval);
+      })
+      .catch((error) => {
+        console.error("Error fetching data:", error);
+        messageApi["error"]({
+          message: "Error",
+          description: "Error updating data" + error,
+          placement: "bottomLeft",
+        });
+      });
   }, [count]);
 
   useEffect(() => {
@@ -530,11 +542,39 @@ const DeatailedPage = () => {
         messageApi["success"]({
           message: "success",
           description: `${info.file.name} file uploaded successfully`,
+          placement: "bottomLeft",
         });
       } else if (info.file.status === "error") {
         messageApi["error"]({
           message: "Error",
           description: `${info.file.name} file upload failed.`,
+          placement: "bottomLeft",
+        });
+      }
+    },
+  };
+
+  const documentationProps: UploadProps = {
+    name: "file",
+    action: `http://192.168.1.69:3000/api/training/${trainingId}/upload/documentation`,
+    listType: "picture",
+
+    onChange(info) {
+      console.log(info);
+      if (info.file.status !== "uploading") {
+        console.log(info.file, info.fileList);
+      }
+      if (info.file.status === "done") {
+        messageApi["success"]({
+          message: "success",
+          description: `${info.file.name} file uploaded successfully`,
+          placement: "bottomLeft",
+        });
+      } else if (info.file.status === "error") {
+        messageApi["error"]({
+          message: "Error",
+          description: `${info.file.name} file upload failed.`,
+          placement: "bottomLeft",
         });
       }
     },
@@ -633,6 +673,7 @@ const DeatailedPage = () => {
                   optionFilterProp="label"
                   style={{ width: "100%" }}
                   showSearch
+                  disabled
                 >
                   {trainingCourses.map((item, index) => (
                     <Option
@@ -648,7 +689,7 @@ const DeatailedPage = () => {
             </Col>
             <Col span={4}>
               <Form.Item name="venue" label="Venue">
-                <Input />
+                <Input disabled />
               </Form.Item>
             </Col>
             <Col span={6}>
@@ -665,7 +706,7 @@ const DeatailedPage = () => {
                   dayjs(trainingData?.end_date),
                 ]}
               >
-                <RangePicker style={{ width: 250 }} />
+                <RangePicker disabled style={{ width: 250 }} />
               </Form.Item>
             </Col>
             <Col span={1}>
@@ -677,17 +718,21 @@ const DeatailedPage = () => {
           <Row gutter={16}>
             <Col span={4}>
               <Form.Item name="contact_person" label="Contact Person">
-                <Input />
+                <Input disabled />
               </Form.Item>
             </Col>
             <Col span={4}>
               <Form.Item name="contact_person_number" label="Contact Number">
-                <Input />
+                <Input disabled />
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item name="remarks" label="Remarks">
-                <TextArea rows={1} placeholder="Training Requirements" />
+                <TextArea
+                  disabled
+                  rows={1}
+                  placeholder="Training Requirements"
+                />
               </Form.Item>
             </Col>
           </Row>
@@ -700,7 +745,12 @@ const DeatailedPage = () => {
                 getValueFromEvent={normFile}
               >
                 <Upload {...AARprops} maxCount={1} accept=".pdf">
-                  <Button icon={<UploadOutlined />}>Upload (Max: 1)</Button>
+                  <Button
+                    icon={<UploadOutlined />}
+                    disabled={trainingData && trainingData.pax < 5}
+                  >
+                    Upload (Max: 1)
+                  </Button>
                 </Upload>
               </Form.Item>
             </Col>
@@ -712,12 +762,16 @@ const DeatailedPage = () => {
                 getValueFromEvent={normFile}
               >
                 <Upload
-                  action={`http://192.168.1.69:3000/api/training/${trainingId}/upload/documentation`}
-                  listType="picture"
+                  {...documentationProps}
                   accept="image/png, image/jpeg"
                   multiple
                 >
-                  <Button icon={<UploadOutlined />}>Upload</Button>
+                  <Button
+                    icon={<UploadOutlined />}
+                    disabled={trainingData && trainingData.pax < 5}
+                  >
+                    Upload
+                  </Button>
                 </Upload>
               </Form.Item>
             </Col>
@@ -798,6 +852,14 @@ const DeatailedPage = () => {
                 )}
               </Form.Item>
             </Col>
+            <Col span={"auto"}>
+              <Form.Item>
+                <ButtonDownloadCertificateCSV
+                  training_id={trainingId}
+                  disabled={trainingData && trainingData.pax < 5}
+                />
+              </Form.Item>
+            </Col>
             <Col span={"auto"} offset={5}>
               <ButtonDeleteTraining
                 trainingId={trainingId}
@@ -839,7 +901,7 @@ const DeatailedPage = () => {
               </Row>
               <Row gutter={[16, 4]}>
                 <Col span={8}>
-                  <Title level={5}>Full Address</Title>
+                  <Title level={5}>House/Apt/Bldg. No/St. Name</Title>
                   <Input defaultValue={traineeData?.full_address} disabled />
                 </Col>
                 <Col span={8}>
@@ -864,7 +926,7 @@ const DeatailedPage = () => {
             </div>
           ) : (
             <div>
-              <Divider orientation="left">Mixed Training</Divider>
+              <Divider orientation="left">Organization Details</Divider>
               <Row>
                 <Col>
                   <Typography.Title level={4}>
@@ -904,6 +966,7 @@ const DeatailedPage = () => {
                 htmlType="reset"
                 onClick={() => {
                   postTrainingParticipants();
+                  closeParticipantsListDrawer();
                 }}
               >
                 Submit
@@ -1001,15 +1064,16 @@ const DeatailedPage = () => {
                   isPWD: isPWD.toString() || "false",
                   isUnemployed: isUnemployed.toString() || "false",
                   office: e.office,
-                  fullAddress: e.fullAdress,
+                  full_address: e.full_address,
                   sitio: e.sitio,
                   barangay: e.barangay,
                 };
                 postPerson(user);
                 setAddParticipantDrawerState(false);
+                setIsUnemployed(false);
               }}
             >
-              <Divider orientation="left">
+              <Divider orientation="left" orientationMargin="0">
                 <Title level={4}>Personnal Information</Title>
               </Divider>
               <Row gutter={16}>
@@ -1104,7 +1168,7 @@ const DeatailedPage = () => {
                       <Option value="O+">O+</Option>
                       <Option value="O">O</Option>
                       <Option value="O-">O-</Option>
-                      <Option value="O-">Unknown</Option>
+                      <Option value="Unkown">Unknown</Option>
                     </Select>
                   </Form.Item>
                 </Col>
@@ -1173,11 +1237,14 @@ const DeatailedPage = () => {
                 </Col>
               </Row>
               <Divider orientation="left">
-                <Title level={4}>Address</Title>
+                <Title level={5}>Address</Title>
               </Divider>
               <Row gutter={16}>
                 <Col span={"auto"}>
-                  <Form.Item name="fullAddress" label="Full Address">
+                  <Form.Item
+                    name="full_address"
+                    label="House/Apt/Bldg. No/St. Name"
+                  >
                     <Input />
                   </Form.Item>
                 </Col>
@@ -1207,7 +1274,7 @@ const DeatailedPage = () => {
                 </Col>
               </Row>
               <Divider orientation="left">
-                <Title level={4}>Contact Information</Title>
+                <Title level={5}>Contact Information</Title>
               </Divider>
               <Row gutter={16}>
                 <Col span={12}>
@@ -1240,7 +1307,7 @@ const DeatailedPage = () => {
                 </Col>
               </Row>
               <Divider orientation="left">
-                <Title level={4}>Career Information</Title>
+                <Title level={5}>Career Information</Title>
               </Divider>
               <Row gutter={16}>
                 <Col span={24}>

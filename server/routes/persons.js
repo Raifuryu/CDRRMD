@@ -35,10 +35,10 @@ async function routes(fastify, options) {
             // Retrieve the ID of the newly inserted person
             const personId = personRows.insertId;
             // Insert into persons_address table
-            await connection.query("INSERT INTO persons_address (fk_person_id, fk_barangay_id, street, sitio) VALUES (?, ?, ?, ?)", [
+            await connection.query("INSERT INTO persons_address (fk_person_id, fk_barangay_id, full_address, sitio) VALUES (?, ?, ?, ?)", [
                 personId,
                 participantsDetails.barangay,
-                participantsDetails.street || "",
+                participantsDetails.full_address || "",
                 participantsDetails.sitio || "",
             ]);
             // Insert into phone_numbers table

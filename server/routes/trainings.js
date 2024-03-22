@@ -3,9 +3,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const stream_1 = require("stream");
+const json2csv_1 = require("json2csv");
+const dayjs_1 = __importDefault(require("dayjs"));
 const fs_1 = __importDefault(require("fs"));
 const util_1 = __importDefault(require("util"));
-const stream_1 = require("stream");
 const path_1 = __importDefault(require("path"));
 const pump = util_1.default.promisify(stream_1.pipeline);
 async function routes(fastify, options) {
@@ -56,7 +58,7 @@ async function routes(fastify, options) {
         handler: async (request, reply) => {
             const id = request.params.id;
             const connection = await fastify.mysql.getConnection();
-            const [rows] = await connection.query("SELECT * FROM trainings_participants LEFT JOIN persons ON trainings_participants.fk_participant_id = persons.person_id LEFT JOIN persons_address ON persons_address.fk_person_id = persons.person_id LEFT JOIN address_barangays ON persons_address.fk_barangay_id = address_barangays.barangay_id LEFT JOIN persons_phone_numbers ON persons.person_id = persons_phone_numbers.person_contact_number_id LEFT JOIN phone_numbers ON phone_numbers.phone_number_id = persons_phone_numbers.fk_phone_number_id LEFT JOIN persons_email_addresses ON persons.person_id = persons_email_addresses.fk_person_id LEFT JOIN email_addresses ON email_addresses.email_address_id = persons_email_addresses.fk_email_address_id WHERE trainings_participants.fk_training_id = ?", [id]);
+            const [rows] = await connection.query("SELECT * FROM trainings_participants LEFT JOIN persons ON persons.person_id = trainings_participants.fk_participant_id LEFT JOIN persons_address ON persons_address.fk_person_id = persons.person_id LEFT JOIN address_barangays ON address_barangays.barangay_id = persons_address.fk_barangay_id LEFT JOIN persons_phone_numbers ON persons_phone_numbers.fk_person_id = persons.person_id LEFT JOIN phone_numbers ON phone_numbers.phone_number_id = persons_phone_numbers.fk_phone_number_id LEFT JOIN persons_email_addresses ON persons_email_addresses.fk_person_id = persons.person_id LEFT JOIN email_addresses ON email_addresses.email_address_id = persons_email_addresses.fk_email_address_id WHERE trainings_participants.fk_training_id = ?;", [id]);
             connection.release();
             reply.code(200).send(rows);
         },
@@ -78,6 +80,18 @@ async function routes(fastify, options) {
             const stream = fs_1.default.createReadStream(`./uploads/trainings/${year}/${id}/${documentationNumber}.jpg`);
             reply.header("Content-Type", "image/jpeg");
             await reply.send(stream);
+        },
+    });
+    fastify.get("/:id/certificates", {
+        handler: async (request, reply) => {
+            const id = request.params.id;
+            const connection = await fastify.mysql.getConnection();
+            const [rows] = (await connection.query("SELECT CONCAT_WS(' ', persons.first_name, COALESCE(persons.middle_name, ''), persons.last_name, COALESCE(persons.extension_name, '')) AS full_name, trainings_participants.certificate_code FROM trainings_participants LEFT JOIN persons ON persons.person_id = trainings_participants.fk_participant_id WHERE fk_training_id = ?;", [id]));
+            const csv = (0, json2csv_1.parse)(rows);
+            return reply
+                .header("Content-Type", "text/csv")
+                .header("Content-Disposition", `attachment; filename="${id}.csv"`)
+                .send(csv);
         },
     });
     fastify.post("/:id/upload/AAR", {
@@ -193,7 +207,16 @@ async function routes(fastify, options) {
             const participant = request.body;
             const connection = await fastify.mysql.getConnection();
             participant.map(async (value) => {
-                await connection.query("INSERT INTO trainings_participants(fk_training_id, fk_participant_id) VALUES(?,?)", [id, value]);
+                const [trainingRows] = (await connection.query("SELECT * FROM trainings WHERE training_id = ?", [id]));
+                const [courseRow] = (await connection.query("SELECT * FROM trainings_courses WHERE training_course_id = ?", [trainingRows[0].fk_course_id]));
+                const [officeRow] = (await connection.query("SELECT * FROM offices WHERE office_id = ?", [trainingRows[0].fk_trainer_id]));
+                const certificate_number = courseRow[0].course_abbreviation +
+                    (0, dayjs_1.default)(trainingRows[0].start_date).year().toString().slice(2) +
+                    "B" +
+                    id +
+                    officeRow[0].acronym +
+                    value;
+                await connection.query("INSERT INTO trainings_participants(fk_training_id, fk_participant_id, certificate_code) VALUES(?, ?, ?)", [id, value, certificate_number]);
             });
             connection.release();
             reply.send({ success: true });

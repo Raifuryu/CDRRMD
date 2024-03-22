@@ -28,7 +28,9 @@ const ButtonCancelTraining: React.FC<props> = ({
       // Assuming putData is a function that sends a PUT request to update data
       await putData(); // This function should handle the API call to update data
       messageApi["success"]({
-        message: "Training Cancelled Successfully",
+        message: "Success",
+        description: "Training Cancelled Successfully",
+        placement: "bottomLeft",
       });
       console.log("Data updated successfully");
       // Optionally, you can do something after successful update

@@ -53,7 +53,7 @@ async function routes(
           occupation: string;
           blood_type: string;
           barangay: string;
-          street: string;
+          full_address: string;
           sitio: string;
           contact_number: string;
           email_address: string;
@@ -91,11 +91,11 @@ async function routes(
 
       // Insert into persons_address table
       await connection.query(
-        "INSERT INTO persons_address (fk_person_id, fk_barangay_id, street, sitio) VALUES (?, ?, ?, ?)",
+        "INSERT INTO persons_address (fk_person_id, fk_barangay_id, full_address, sitio) VALUES (?, ?, ?, ?)",
         [
           personId,
           participantsDetails.barangay,
-          participantsDetails.street || "",
+          participantsDetails.full_address || "",
           participantsDetails.sitio || "",
         ]
       );

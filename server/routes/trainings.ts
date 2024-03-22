@@ -4,11 +4,13 @@ import {
   FastifyRequest,
   RouteShorthandOptions,
 } from "fastify";
+import { FieldPacket, RowDataPacket } from "mysql2";
+import { pipeline } from "stream";
+import { parse } from "json2csv";
+import dayjs from "dayjs";
 import fs from "fs";
 import util from "util";
-import { pipeline } from "stream";
 import path from "path";
-import { FieldPacket, RowDataPacket } from "mysql2";
 
 const pump = util.promisify(pipeline);
 
@@ -120,7 +122,7 @@ async function routes(
 
       const connection = await fastify.mysql.getConnection();
       const [rows] = await connection.query(
-        "SELECT * FROM trainings_participants LEFT JOIN persons ON persons.person_id = trainings_participants.fk_participant_id LEFT JOIN persons_address ON persons_address.fk_person_id = persons.person_id LEFT JOIN address_barangays ON address_barangays.barangay_id = persons_address.fk_barangay_id LEFT JOIN persons_phone_numbers ON persons_phone_numbers.fk_person_id = persons.person_id LEFT JOIN phone_numbers ON phone_numbers.phone_number_id = persons_phone_numbers.fk_phone_number_id LEFT JOIN persons_email_addresses ON persons_email_addresses.fk_person_id LEFT JOIN email_addresses ON email_addresses.email_address_id = persons_email_addresses.fk_email_address_id WHERE trainings_participants.fk_training_id = ?",
+        "SELECT * FROM trainings_participants LEFT JOIN persons ON persons.person_id = trainings_participants.fk_participant_id LEFT JOIN persons_address ON persons_address.fk_person_id = persons.person_id LEFT JOIN address_barangays ON address_barangays.barangay_id = persons_address.fk_barangay_id LEFT JOIN persons_phone_numbers ON persons_phone_numbers.fk_person_id = persons.person_id LEFT JOIN phone_numbers ON phone_numbers.phone_number_id = persons_phone_numbers.fk_phone_number_id LEFT JOIN persons_email_addresses ON persons_email_addresses.fk_person_id = persons.person_id LEFT JOIN email_addresses ON email_addresses.email_address_id = persons_email_addresses.fk_email_address_id WHERE trainings_participants.fk_training_id = ?;",
         [id]
       );
 
@@ -168,6 +170,32 @@ async function routes(
       );
       reply.header("Content-Type", "image/jpeg");
       await reply.send(stream);
+    },
+  });
+
+  fastify.get("/:id/certificates", {
+    handler: async (
+      request: FastifyRequest<{
+        Params: {
+          id: number;
+        };
+      }>,
+      reply: FastifyReply
+    ) => {
+      const id = request.params.id;
+      const connection = await fastify.mysql.getConnection();
+
+      const [rows] = (await connection.query(
+        "SELECT CONCAT_WS(' ', persons.first_name, COALESCE(persons.middle_name, ''), persons.last_name, COALESCE(persons.extension_name, '')) AS full_name, trainings_participants.certificate_code FROM trainings_participants LEFT JOIN persons ON persons.person_id = trainings_participants.fk_participant_id WHERE fk_training_id = ?;",
+        [id]
+      )) as [RowDataPacket, FieldPacket[]];
+
+      const csv = parse(rows);
+
+      return reply
+        .header("Content-Type", "text/csv")
+        .header("Content-Disposition", `attachment; filename="${id}.csv"`)
+        .send(csv);
     },
   });
 
@@ -382,10 +410,32 @@ async function routes(
       const id = request.params.id;
       const participant = request.body;
       const connection = await fastify.mysql.getConnection();
-      participant.map(async (value) => {
+      participant.map(async (value: number) => {
+        const [trainingRows] = (await connection.query(
+          "SELECT * FROM trainings WHERE training_id = ?",
+          [id]
+        )) as [RowDataPacket, FieldPacket[]];
+
+        const [courseRow] = (await connection.query(
+          "SELECT * FROM trainings_courses WHERE training_course_id = ?",
+          [trainingRows[0].fk_course_id]
+        )) as [RowDataPacket, FieldPacket[]];
+
+        const [officeRow] = (await connection.query(
+          "SELECT * FROM offices WHERE office_id = ?",
+          [trainingRows[0].fk_trainer_id]
+        )) as [RowDataPacket, FieldPacket[]];
+
+        const certificate_number =
+          courseRow[0].course_abbreviation +
+          dayjs(trainingRows[0].start_date).year().toString().slice(2) +
+          "B" +
+          id +
+          officeRow[0].acronym +
+          value;
         await connection.query(
-          "INSERT INTO trainings_participants(fk_training_id, fk_participant_id) VALUES(?,?)",
-          [id, value]
+          "INSERT INTO trainings_participants(fk_training_id, fk_participant_id, certificate_code) VALUES(?, ?, ?)",
+          [id, value, certificate_number]
         );
       });
       connection.release();

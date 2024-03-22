@@ -15,12 +15,15 @@
     "@fastify/cors": "^9.0.1",
     "@fastify/multipart": "^8.1.0",
     "@fastify/mysql": "^4.2.0",
+    "dayjs": "^1.11.10",
     "dotenv": "^16.4.2",
     "fastify": "^4.26.1",
     "fastify-plugin": "^4.5.1",
+    "json2csv": "^6.0.0-alpha.2",
     "mysql2": "^3.9.1"
   },
   "devDependencies": {
+    "@types/json2csv": "^5.0.7",
     "@types/node": "^20.11.17",
     "typescript": "^5.3.3"
   }

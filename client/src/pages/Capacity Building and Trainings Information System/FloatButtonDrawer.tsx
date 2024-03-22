@@ -133,10 +133,11 @@ const FloatButtonDrawer: React.FC<props> = ({ updateState }) => {
       <FloatButton
         icon={<PlusOutlined />}
         type="primary"
-        description="Add"
-        shape="square"
+        // description="Add Training"
+        shape="circle"
         onClick={() => setTrainingDrawer(true)}
         tooltip={<div>Add Training</div>}
+        style={{ transform: "scale(1.2)" }}
       />
 
       <Drawer
