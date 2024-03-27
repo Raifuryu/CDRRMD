@@ -60,40 +60,42 @@ const index = () => {
 
   return (
     <>
-      <Typography.Title className="mt-10">
-        LDRRMP 2023-2030 Programs, Projects and Activities
-      </Typography.Title>
-      <DataGrid
-        getRowId={(row) => row.LDRRMP_id}
-        rows={MnEData}
-        columns={columns}
-        getRowHeight={() => "auto"}
-        sx={{
-          [`& .${gridClasses.cell}`]: {
-            py: 1,
-          },
-        }}
-        initialState={{
-          pagination: {
-            paginationModel: {
-              pageSize: 100,
+      <div>
+        <Typography.Title className="mt-10">
+          LDRRMP 2023-2030 Programs, Projects and Activities
+        </Typography.Title>
+        <DataGrid
+          getRowId={(row) => row.LDRRMP_id}
+          rows={MnEData}
+          columns={columns}
+          getRowHeight={() => "auto"}
+          sx={{
+            [`& .${gridClasses.cell}`]: {
+              py: 1,
             },
-          },
-          filter: {
-            filterModel: {
-              items: [],
+          }}
+          initialState={{
+            pagination: {
+              paginationModel: {
+                pageSize: 100,
+              },
             },
-          },
-        }}
-        pageSizeOptions={[5, 10, 50, 100]}
-        disableRowSelectionOnClick
-        slots={{ toolbar: GridToolbar }}
-        slotProps={{
-          toolbar: {
-            showQuickFilter: true,
-          },
-        }}
-      />
+            filter: {
+              filterModel: {
+                items: [],
+              },
+            },
+          }}
+          pageSizeOptions={[5, 10, 50, 100]}
+          disableRowSelectionOnClick
+          slots={{ toolbar: GridToolbar }}
+          slotProps={{
+            toolbar: {
+              showQuickFilter: true,
+            },
+          }}
+        />
+      </div>
     </>
   );
 };

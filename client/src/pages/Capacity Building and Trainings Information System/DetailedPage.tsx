@@ -37,7 +37,7 @@ import ButtonCancelTraining from "./ButtonCancelTraining";
 import ButtonOpenAAR from "./ButtonOpenAAR";
 import ButtonOpenDocumentation from "./ButtonOpenDocumentation";
 import ButtonDeleteTraining from "./ButtonDeleteTraining";
-import DrawerAddOrganization from "./DrawerAddOrganization";
+import DrawerAddOrganization from "../../components/DrawerAddOrganization";
 import ButtonDownloadCertificateCSV from "./ButtonDownloadCertificateCSV";
 
 const { RangePicker } = DatePicker;
@@ -201,11 +201,13 @@ const DeatailedPage = () => {
       title: "LGBTQ+",
       dataIndex: "isLGBTQ",
       key: "isLGBTQ",
+      render: (value: string) => <div>{value === "true" ? "Yes" : "No"}</div>,
     },
     {
       title: "PWD",
       dataIndex: "isPWD",
       key: "isPWD",
+      render: (value: string) => <div>{value === "true" ? "Yes" : "No"}</div>,
     },
     {
       title: "Full Address",
@@ -544,6 +546,7 @@ const DeatailedPage = () => {
           description: `${info.file.name} file uploaded successfully`,
           placement: "bottomLeft",
         });
+        updateCount();
       } else if (info.file.status === "error") {
         messageApi["error"]({
           message: "Error",
@@ -577,6 +580,7 @@ const DeatailedPage = () => {
           placement: "bottomLeft",
         });
       }
+      updateCount();
     },
   };
 
@@ -628,7 +632,11 @@ const DeatailedPage = () => {
   }
 
   if (loading) {
-    return <Spin />;
+    return (
+      <div className="items-center">
+        <Spin />
+      </div>
+    );
   }
 
   return (
@@ -1026,6 +1034,7 @@ const DeatailedPage = () => {
                   icon={<DeleteRowOutlined />}
                   onClick={() => {
                     participantsForm.resetFields();
+                    setIsUnemployed(false);
                   }}
                   danger
                 >
@@ -1313,7 +1322,7 @@ const DeatailedPage = () => {
                 <Col span={24}>
                   <Form.Item
                     name="isUnemployed"
-                    label="Unemployed"
+                    label="Unemployed/Undefined"
                     valuePropName="checked"
                   >
                     <Checkbox

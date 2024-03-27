@@ -1,31 +1,62 @@
 import { useEffect, useState } from "react";
-import Table from "../../components/Table";
+import {
+  DataGrid,
+  GridColDef,
+  GridRenderCellParams,
+  GridToolbar,
+  gridClasses,
+} from "@mui/x-data-grid";
+import FloatButtonAdd from "./FloatButtonAdd";
 
-const columns = [
+const columns: GridColDef[] = [
+  { field: "id", headerName: "ID", width: 50 },
+  { field: "first_name", headerName: "First Name", width: 150 },
+  { field: "middle_name", headerName: "Middle Name", width: 100 },
+  { field: "last_name", headerName: "Last Name", width: 100 },
   {
-    header: "ID",
-    accessorKey: "id",
-    cell: ({ row }: { row: any }) => {
-      return row.index;
-    },
+    field: "extension_name",
+    headerName: "Extension Name",
+    width: 120,
   },
-  { header: "First Name", accessorKey: "first_name", enableColumnFilter: true },
   {
-    header: "Middle Name",
-    accessorKey: "middle_name",
-    enableColumnFilter: true,
+    field: "designation",
+    headerName: "Designation",
+    width: 100,
   },
-  { header: "Last Name", accessorKey: "last_name", enableColumnFilter: true },
-  { header: "Office", accessorKey: "acronym", filterFn: "fuzzy" },
   {
-    header: "Phone Number",
-    accessorKey: "contact_number",
-    cell: ({ row }: { row: any }) => {
-      return <a href={`tel:${row.original.contact_number}`}>{row.original.contact_number}</a>;
-    },
-    enableColumnFilter: true,
+    field: "office_name",
+    headerName: "Office Name",
+    width: 150,
   },
-  { header: "Email Address", accessorKey: "email_address" },
+  {
+    field: "acronym",
+    headerName: "Office Acronym",
+    width: 150,
+  },
+  {
+    field: "contact_number",
+    headerName: "Contact Number",
+    width: 150,
+    renderCell: (params: GridRenderCellParams) => (
+      <a href={`tel:${params.value}`}>{params.value}</a>
+    ),
+  },
+  {
+    field: "email_address",
+    headerName: "Email Address",
+    width: 200,
+    renderCell: (params: GridRenderCellParams) => (
+      <a href={`mailto:${params.value}`}>{params.value}</a>
+    ),
+  },
+  {
+    field: "id",
+    headerName: "View",
+    width: 200,
+    renderCell: (params: GridRenderCellParams) => (
+      <a href={params.value}>View</a>
+    ),
+  },
 ];
 
 const DirectoryLayout = () => {
@@ -55,8 +86,39 @@ const DirectoryLayout = () => {
 
   return (
     <>
-      <div className="">
-        <Table data={data} columns={columns} />
+      <div>
+        <DataGrid
+          getRowId={(row) => row.id}
+          rows={data}
+          columns={columns}
+          getRowHeight={() => "auto"}
+          sx={{
+            [`& .${gridClasses.cell}`]: {
+              py: 1,
+            },
+          }}
+          initialState={{
+            pagination: {
+              paginationModel: {
+                pageSize: 20,
+              },
+            },
+            filter: {
+              filterModel: {
+                items: [],
+              },
+            },
+          }}
+          pageSizeOptions={[10, 20, 50, 100]}
+          disableRowSelectionOnClick
+          slots={{ toolbar: GridToolbar }}
+          slotProps={{
+            toolbar: {
+              showQuickFilter: true,
+            },
+          }}
+        />
+        <FloatButtonAdd />
       </div>
     </>
   );

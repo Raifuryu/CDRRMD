@@ -288,7 +288,7 @@ const CBTISLayout = () => {
       {contextHolder}
       <div className="flex flex-col">
         <Typography.Title level={2}>
-          Capacity Building Information System
+          Training - Information Management System
         </Typography.Title>
         <div className="flex">
           {/* <Table

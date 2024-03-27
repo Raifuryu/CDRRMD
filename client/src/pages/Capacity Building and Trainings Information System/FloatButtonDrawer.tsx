@@ -17,7 +17,7 @@ import { PlusOutlined } from "@ant-design/icons";
 import TextArea from "antd/es/input/TextArea";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
-import DrawerAddOrganization from "./DrawerAddOrganization";
+import DrawerAddOrganization from "../../components/DrawerAddOrganization";
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;

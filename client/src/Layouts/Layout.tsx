@@ -8,10 +8,8 @@ export default function Layout() {
         <div className="flex">
           <Navbar />
         </div>
-        <div className="flex flex-1 justify-center items-center">
-          <div>
-            <Outlet />
-          </div>
+        <div className="flex flex-1 justify-center">
+          <Outlet />
         </div>
         <div className="flex">
           <article className="prose-l">
