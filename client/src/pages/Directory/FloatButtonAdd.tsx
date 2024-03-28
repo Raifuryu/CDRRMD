@@ -22,7 +22,11 @@ import DrawerAddOrganization from "../../components/DrawerAddOrganization";
 const { Title } = Typography;
 const { Option } = Select;
 
-const FloatButtonAdd = () => {
+interface props {
+  updateState: () => void;
+}
+
+const FloatButtonAdd: React.FC<props> = ({ updateState }) => {
   interface Organization {
     office_id: number;
     acronym: string;
@@ -114,6 +118,7 @@ const FloatButtonAdd = () => {
       })
       .finally(() => {
         setCount(count + 1);
+        updateState();
       });
   };
 
@@ -378,11 +383,7 @@ const FloatButtonAdd = () => {
           </Divider>
           <Row gutter={16}>
             <Col span={24}>
-              <Form.Item
-                name="isUnemployed"
-                label="Unemployed/Undefined"
-                valuePropName="checked"
-              >
+              <Form.Item name="isUnemployed" valuePropName="checked">
                 <Checkbox
                   checked={true}
                   defaultChecked={false}
@@ -390,7 +391,7 @@ const FloatButtonAdd = () => {
                     setIsUnemployed(!isUnemployed);
                   }}
                 >
-                  Unemployed
+                  Unemployed/Undefined
                 </Checkbox>
               </Form.Item>
             </Col>

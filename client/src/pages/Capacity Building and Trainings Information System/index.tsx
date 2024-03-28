@@ -24,7 +24,7 @@ const CBTISLayout = () => {
   const [messageApi, contextHolder] = notification.useNotification();
 
   const [countState, setCountState] = useState(1);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const [trainingData, setTrainingData] = useState<Training[]>([]);
 
@@ -209,19 +209,19 @@ const CBTISLayout = () => {
         <Title
           level={5}
           type={
-            params.value === 1
+            params.value === "Ongoing"
               ? "warning"
-              : params.value === 0
+              : params.value === "Completed"
               ? "success"
               : "danger"
           }
         >
-          {params.value === 1 ? (
-            <span>Active</span>
-          ) : params.value === 0 ? (
-            <span>Done</span>
+          {params.value === "Ongoing" ? (
+            <span>{params.value}</span>
+          ) : params.value === "Compelted" ? (
+            <span>{params.value}</span>
           ) : (
-            <span>Cancelled</span>
+            <span>{params.value}</span>
           )}
         </Title>
       ),
@@ -280,7 +280,11 @@ const CBTISLayout = () => {
   // };
 
   if (loading) {
-    return <Spin />;
+    return (
+      <div className="flex items-center">
+        <Spin />
+      </div>
+    );
   }
 
   return (

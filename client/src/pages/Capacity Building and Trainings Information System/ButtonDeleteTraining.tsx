@@ -3,7 +3,7 @@ import { useState } from "react";
 
 interface props {
   trainingId: string | undefined;
-  trainingStatus: number | undefined;
+  trainingStatus: string | undefined;
 }
 
 const ButtonDeleteTraining: React.FC<props> = ({
@@ -67,7 +67,9 @@ const ButtonDeleteTraining: React.FC<props> = ({
       <Button
         onClick={() => setIsModalOpen(true)}
         danger
-        disabled={trainingStatus === 2 || trainingStatus === 0}
+        disabled={
+          trainingStatus === "Cancelled" || trainingStatus === "Completed"
+        }
       >
         Delete Training
       </Button>

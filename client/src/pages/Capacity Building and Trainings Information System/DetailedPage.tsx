@@ -45,6 +45,7 @@ const { Option } = Select;
 const { Title } = Typography;
 
 const DeatailedPage = () => {
+  
   interface Barangay {
     key: React.Key;
     barangay_id: number;
@@ -103,7 +104,7 @@ const DeatailedPage = () => {
     after_activity_report: boolean;
     documentations: boolean;
     pax: number;
-    status: number;
+    status: string;
   }
 
   interface Course {
@@ -358,29 +359,23 @@ const DeatailedPage = () => {
   }, [count]);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      fetch(
-        `http://192.168.1.69:3000/api/training/${trainingId}/participants`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      )
-        .then((response) => response.json())
-        .then((data) => {
-          // Check if data is available before updating the state
-          setParticipantsData(data);
+    fetch(`http://192.168.1.69:3000/api/training/${trainingId}/participants`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        // Check if data is available before updating the state
+        setParticipantsData(data);
 
-          setLoading(false);
-        })
-        .catch((error) => {
-          console.error("Error fetching organization data:", error);
-          setLoading(false);
-        });
-    }, 1000);
-    return () => clearInterval(interval);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Error fetching organization data:", error);
+        setLoading(false);
+      });
   }, [count]);
 
   const postTrainingParticipants = () => {
@@ -633,7 +628,7 @@ const DeatailedPage = () => {
 
   if (loading) {
     return (
-      <div className="items-center">
+      <div className="flex items-center">
         <Spin />
       </div>
     );
@@ -650,13 +645,13 @@ const DeatailedPage = () => {
         >
           <div>
             <Title level={2}>Training Details</Title>
-            {trainingData?.status === 1 ? (
+            {trainingData?.status === "Ongoing" ? (
               <Typography.Title level={4} type="warning">
-                Status: Active
+                Status: Ongoing
               </Typography.Title>
-            ) : trainingData?.status === 0 ? (
+            ) : trainingData?.status === "Completed" ? (
               <Typography.Title level={4} type="success">
-                Status: Done
+                Status: Completed
               </Typography.Title>
             ) : (
               <Typography.Title level={4} type="danger">

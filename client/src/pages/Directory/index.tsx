@@ -9,7 +9,6 @@ import {
 import FloatButtonAdd from "./FloatButtonAdd";
 
 const columns: GridColDef[] = [
-  { field: "id", headerName: "ID", width: 50 },
   { field: "first_name", headerName: "First Name", width: 150 },
   { field: "middle_name", headerName: "Middle Name", width: 100 },
   { field: "last_name", headerName: "Last Name", width: 100 },
@@ -61,6 +60,7 @@ const columns: GridColDef[] = [
 
 const DirectoryLayout = () => {
   const [data, setData] = useState([]);
+  const [count, setCount] = useState(0);
 
   const getData = async () => {
     try {
@@ -82,7 +82,11 @@ const DirectoryLayout = () => {
 
   useEffect(() => {
     getData();
-  }, []);
+  }, [count]);
+
+  const updateCount = async () => {
+    setCount(count + 1);
+  };
 
   return (
     <>
@@ -118,7 +122,7 @@ const DirectoryLayout = () => {
             },
           }}
         />
-        <FloatButtonAdd />
+        <FloatButtonAdd updateState={updateCount} />
       </div>
     </>
   );

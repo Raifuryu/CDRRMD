@@ -116,7 +116,7 @@ async function routes(fastify, options) {
                 data.file.pipe(writeStream);
                 const [rows] = (await connection.query(`SELECT * FROM trainings WHERE after_activity_report = 'true' AND documentations = 'true' AND training_id = ${id}`));
                 if (rows[0]) {
-                    await connection.query(`UPDATE trainings SET status = 0 WHERE training_id = ${id}`);
+                    await connection.query(`UPDATE trainings SET status = "Completed" WHERE training_id = ${id}`);
                 }
                 // Return response once file is uploaded
                 data.file.on("end", () => {
@@ -153,7 +153,7 @@ async function routes(fastify, options) {
                 await connection.query(`UPDATE trainings SET documentations = 'true' WHERE training_id = ${id}`);
                 const [rows] = (await connection.query(`SELECT * FROM trainings WHERE after_activity_report = 'true' AND documentations = 'true' AND training_id = ${id}`));
                 if (rows[0]) {
-                    await connection.query(`UPDATE trainings SET status = 0 WHERE training_id = ${id}`);
+                    await connection.query(`UPDATE trainings SET status = "Completed" WHERE training_id = ${id}`);
                 }
                 reply.code(200).send({ success: true });
             }
@@ -206,18 +206,32 @@ async function routes(fastify, options) {
             const id = request.params.id;
             const participant = request.body;
             const connection = await fastify.mysql.getConnection();
-            participant.map(async (value) => {
+            for (const value of participant) {
                 const [trainingRows] = (await connection.query("SELECT * FROM trainings WHERE training_id = ?", [id]));
                 const [courseRow] = (await connection.query("SELECT * FROM trainings_courses WHERE training_course_id = ?", [trainingRows[0].fk_course_id]));
+                const [trainingParticipantRow] = (await connection.query("SELECT MAX(training_participant_number) AS largest_participant_number FROM trainings_participants WHERE training_year = ? AND training_abbreviation = ?", [
+                    (0, dayjs_1.default)(trainingRows[0].start_date).year(),
+                    courseRow[0].course_abbreviation,
+                ]));
                 const [officeRow] = (await connection.query("SELECT * FROM offices WHERE office_id = ?", [trainingRows[0].fk_trainer_id]));
-                const certificate_number = courseRow[0].course_abbreviation +
-                    (0, dayjs_1.default)(trainingRows[0].start_date).year().toString().slice(2) +
-                    "B" +
-                    id +
-                    officeRow[0].acronym +
-                    value;
-                await connection.query("INSERT INTO trainings_participants(fk_training_id, fk_participant_id, certificate_code) VALUES(?, ?, ?)", [id, value, certificate_number]);
-            });
+                const participant_number = (trainingParticipantRow[0].largest_participant_number || 0) + 1;
+                const certificate_number = officeRow[0].acronym +
+                    "-" +
+                    courseRow[0].course_abbreviation +
+                    "-" +
+                    (0, dayjs_1.default)(trainingRows[0].start_date).year().toString() +
+                    "-" +
+                    participant_number;
+                console.log(certificate_number);
+                await connection.query("INSERT INTO trainings_participants(fk_training_id, training_participant_number, fk_participant_id, training_abbreviation, training_year, certificate_code) VALUES(?, ?, ?, ?, ?, ?)", [
+                    id,
+                    participant_number,
+                    value,
+                    courseRow[0].course_abbreviation,
+                    (0, dayjs_1.default)(trainingRows[0].start_date).year(),
+                    certificate_number,
+                ]);
+            }
             connection.release();
             reply.send({ success: true });
         },
@@ -226,7 +240,7 @@ async function routes(fastify, options) {
         handler: async (request, reply) => {
             const id = request.params.id;
             const connection = await fastify.mysql.getConnection();
-            const [rows, fields] = await connection.query("UPDATE trainings SET status = ? WHERE training_id = ?;", [4, id]);
+            const [rows, fields] = await connection.query("UPDATE trainings SET status = ? WHERE training_id = ?;", ["Deleted", id]);
             connection.release();
             reply.code(201).send({ success: true });
         },
@@ -236,7 +250,7 @@ async function routes(fastify, options) {
             const id = request.params.id;
             const remarks = request.body.remarks;
             const connection = await fastify.mysql.getConnection();
-            await connection.query("UPDATE trainings SET status = ?, remarks = ? WHERE training_id = ?;", [2, remarks || "", id]);
+            await connection.query("UPDATE trainings SET status = ?, remarks = ? WHERE training_id = ?;", ["Cancelled", remarks || "", id]);
             connection.release();
             reply.code(201).send({ success: true });
         },

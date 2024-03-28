@@ -4,7 +4,7 @@ import TextArea from "antd/es/input/TextArea";
 
 interface props {
   trainingId: string;
-  trainingStatus: number | undefined;
+  trainingStatus: string | undefined;
 }
 
 const ButtonCancelTraining: React.FC<props> = ({
@@ -91,7 +91,9 @@ const ButtonCancelTraining: React.FC<props> = ({
         type="default"
         danger
         onClick={showModal}
-        disabled={trainingStatus === 2 || trainingStatus === 0}
+        disabled={
+          trainingStatus === "Cancelled" || trainingStatus === "Completed"
+        }
       >
         Cancel Training
       </Button>
