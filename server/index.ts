@@ -27,6 +27,13 @@ fastify.register(cors, {
   credentials: true,
 });
 fastify.register(databaseConfig);
+
+fastify.get("/", {
+  handler: async () => {
+    return { success: true };
+  },
+});
+
 fastify.register(personsRoute, { prefix: "/api/persons" });
 fastify.register(trainingRoute, { prefix: "/api/training" });
 fastify.register(addressRoute, { prefix: "/api/address" });

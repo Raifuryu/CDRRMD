@@ -17,7 +17,7 @@ async function routes(fastify, options) {
     fastify.get("/", {
         handler: async (request, reply) => {
             const connection = await fastify.mysql.getConnection();
-            const [rows] = await connection.query("SELECT trainings.*, ( SELECT COUNT(*) FROM trainings_participants WHERE trainings_participants.fk_training_id = trainings.training_id ) AS pax, trainings_courses.*, offices.office_name AS trainee FROM trainings LEFT JOIN trainings_courses ON trainings.fk_course_id = trainings_courses.training_course_id LEFT JOIN trainings_trainees ON trainings.training_id = trainings_trainees.fk_training_id LEFT JOIN offices ON trainings_trainees.fk_trainee_id = offices.office_id WHERE trainings.status != 4 ORDER BY trainings.start_date DESC");
+            const [rows] = await connection.query("SELECT trainings.*, ( SELECT COUNT(*) FROM trainings_participants WHERE trainings_participants.fk_training_id = trainings.training_id ) AS pax, trainings_courses.*, offices.office_name AS trainee FROM trainings LEFT JOIN trainings_courses ON trainings.fk_course_id = trainings_courses.training_course_id LEFT JOIN trainings_trainees ON trainings.training_id = trainings_trainees.fk_training_id LEFT JOIN offices ON trainings_trainees.fk_trainee_id = offices.office_id WHERE trainings.status != 'Deleted' ORDER BY trainings.start_date DESC");
             connection.release();
             return rows;
         },

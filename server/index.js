@@ -28,6 +28,11 @@ fastify.register(cors_1.default, {
     credentials: true,
 });
 fastify.register(database_1.default);
+fastify.get("/", {
+    handler: async () => {
+        return { success: true };
+    },
+});
 fastify.register(persons_1.default, { prefix: "/api/persons" });
 fastify.register(trainings_1.default, { prefix: "/api/training" });
 fastify.register(address_1.default, { prefix: "/api/address" });

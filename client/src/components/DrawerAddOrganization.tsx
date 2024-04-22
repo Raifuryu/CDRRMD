@@ -34,8 +34,8 @@ const DrawerAddOrganization: React.FC<props> = ({ updateCount }) => {
   const [organizationType, setOrganizationType] = useState(1);
   const organizationTypeOptions = [
     { label: "Government", value: 1 },
-    { label: "Semi-Government", value: 3 },
     { label: "Government-Owned and Controlled Corporation", value: 2 },
+    { label: "Civil Society Organization", value: 3 },
   ];
 
   const [barangay, setBarangay] = useState<Barangay[]>([]);
@@ -107,7 +107,7 @@ const DrawerAddOrganization: React.FC<props> = ({ updateCount }) => {
             <Button
               htmlType="submit"
               onClick={() => {
-                organizationForm.submit;
+                organizationForm.submit();
                 updateCount();
               }}
             >

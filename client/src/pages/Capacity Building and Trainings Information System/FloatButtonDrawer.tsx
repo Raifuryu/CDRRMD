@@ -62,10 +62,10 @@ const FloatButtonDrawer: React.FC<props> = ({ updateState }) => {
 
   useEffect(() => {
     Promise.all([
-      fetch("http://192.168.1.69:3000/api/training/courses").then((response) =>
+      fetch(`http://192.168.1.69:3000/api/training/courses`).then((response) =>
         response.json()
       ),
-      fetch("http://192.168.1.69:3000/api/agencies").then((response) =>
+      fetch(`http://192.168.1.69:3000/api/agencies`).then((response) =>
         response.json()
       ),
     ]).then(([courses, offices]) => {
@@ -124,7 +124,6 @@ const FloatButtonDrawer: React.FC<props> = ({ updateState }) => {
 
   const updateCount = () => {
     setCount(count + 1);
-    console.log(count);
   };
 
   return (
